@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv"
 import { Client } from "discord.js"
 
-import { BotModule, HOCModule, Environment } from "./types"
+import { Environment } from "./types"
 import { loadEnabledModules, applyAllModules } from "./modules"
 
 // Initialize environment variables
@@ -12,14 +12,15 @@ declare let process: {
 dotenv.config()
 
 async function main() {
-    console.log("Hello world")
     const client = new Client()
-    const enabledModules = loadEnabledModules()
-    console.log("Applying modules")
-    await applyAllModules(client, enabledModules)
-    console.log("Applied all modules")
+    client.on("ready", async () => {
+        const enabledModules = loadEnabledModules()
+        console.log("Applying modules")
+        await applyAllModules(client, enabledModules)
+        console.log("Applied all modules")
+        console.log("Logged in!")
+    })
     await client.login(process.env.DISCORD_TOKEN)
-    console.log("Logged in!")
 }
 
 // Only execute the main function here
