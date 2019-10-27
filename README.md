@@ -12,3 +12,7 @@ A semi-declarative Discord bot written in TypeScript with Discord.js
 ## Bot Structure
 
 All functionality should be defined in a `src/modules/<module-name>.module.ts`. Each module should export one function of type `BotModule`. Classes are banned by the linter.
+
+## Credits
+
+Shoutout to Shawn Wu for mentioning the module pattern in his primitive bot framework https://github.com/chudooder/pocket-gopher
