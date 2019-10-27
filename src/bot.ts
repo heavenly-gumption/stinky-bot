@@ -18,7 +18,8 @@ async function main() {
     console.log("Applying modules")
     await applyAllModules(client, enabledModules)
     console.log("Applied all modules")
-    client.login(process.env.DISCORD_TOKEN)
+    await client.login(process.env.DISCORD_TOKEN)
+    console.log("Logged in!")
 }
 
 // Only execute the main function here
