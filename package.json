@@ -1,0 +1,27 @@
+{
+  "name": "stinky-bot",
+  "version": "0.0.1",
+  "description": "Semi-declarative Discord Bot for Ruse Cruise",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-ts": "tsc",
+    "lint-ts": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
+    "build": "npm run build-ts && npm run lint-ts",
+    "bot": "node dist/bot.js",
+    "start": "npm run build && npm run bot"
+  },
+  "author": "Pablo Morales",
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.5.0",
+    "@typescript-eslint/parser": "^2.5.0",
+    "eslint": "^6.6.0",
+    "eslint-plugin-fp": "^2.3.0",
+    "typescript": "^3.6.4"
+  },
+  "dependencies": {
+    "@types/node": "^12.11.7",
+    "@types/ws": "^6.0.3",
+    "discord.js": "github:discordjs/discord.js"
+  }
+}
