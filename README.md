@@ -15,4 +15,5 @@ All functionality should be defined in a `src/modules/<module-name>.module.ts`. 
 
 ## Credits
 
+Shoutout to Nate DeBoer for maintaning my old and poorly written bot
 Shoutout to Shawn Wu for mentioning the module pattern in his primitive bot framework https://github.com/chudooder/pocket-gopher
