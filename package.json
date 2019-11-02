@@ -6,9 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-ts": "tsc",
     "lint-ts": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
-    "build": "npm run build-ts && npm run lint-ts",
-    "bot": "node dist/bot.js",
-    "start": "npm run build && npm run bot"
+    "postinstall": "npm run build-ts && npm run lint-ts",
+    "build": "npm run postinstall",
+    "start": "node dist/bot.js"
   },
   "author": "Pablo Morales",
   "license": "MIT",
@@ -16,13 +16,13 @@
     "@typescript-eslint/eslint-plugin": "^2.5.0",
     "@typescript-eslint/parser": "^2.5.0",
     "eslint": "^6.6.0",
-    "eslint-plugin-functional": "^1.0.0"
+    "eslint-plugin-functional": "^1.0.0",
+    "typescript": "^3.6.4"
   },
   "dependencies": {
     "@types/node": "^12.11.7",
     "@types/ws": "^6.0.3",
     "discord.js": "github:discordjs/discord.js",
-    "dotenv": "^8.2.0",
-    "typescript": "^3.6.4"
+    "dotenv": "^8.2.0"
   }
 }
