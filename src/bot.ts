@@ -1,15 +1,16 @@
 import * as dotenv from "dotenv"
+
+declare let process: {
+    env: Environment;
+}
+dotenv.config()
+
 import { Client } from "discord.js"
 
 import { Environment } from "./types"
 import { loadEnabledModules, applyAllModules } from "./modules"
 
 // Initialize environment variables
-
-declare let process: {
-    env: Environment;
-}
-dotenv.config()
 
 async function main() {
     const client = new Client()
