@@ -3,9 +3,7 @@ import { ClientUser, User, Message, MessageReaction,
     PartialMessage, TextChannel, DMChannel, Client } from "discord.js"
 import axios from "axios"
 
-const REACTION_NUMBERS: string[] = ["\u0030\u20E3","\u0031\u20E3","\u0032\u20E3",
-    "\u0033\u20E3","\u0034\u20E3","\u0035\u20E3", "\u0036\u20E3","\u0037\u20E3",
-    "\u0038\u20E3","\u0039\u20E3"]
+const REACTION_NUMBERS: string[] = ["\u0031\u20E3","\u0032\u20E3","\u0033\u20E3","\u0034\u20E3"]
 const TIME_TO_ANSWER: number = 30000
 const EDIT_INTERVAL: number = 2000
 const PROGRESS_BAR_LENGTH: number = 30
@@ -67,7 +65,7 @@ async function handleTrivia(channel: TextChannel | DMChannel): Promise<void> {
 
     // React to the message with [1], [2], [3], [4] in order
     allAnswers.forEach(async (q, i) => {
-        await sentMessage.react(REACTION_NUMBERS[i + 1])
+        await sentMessage.react(REACTION_NUMBERS[i])
     })
 
     // Collect reactions
