@@ -3,10 +3,13 @@ import { ClientUser, User, Message, MessageReaction,
     PartialMessage, TextChannel, DMChannel, Client } from "discord.js"
 import axios from "axios"
 
-const reactionNumbers: string[] = ["\u0030\u20E3","\u0031\u20E3","\u0032\u20E3",
+const REACTION_NUMBERS: string[] = ["\u0030\u20E3","\u0031\u20E3","\u0032\u20E3",
     "\u0033\u20E3","\u0034\u20E3","\u0035\u20E3", "\u0036\u20E3","\u0037\u20E3",
-    "\u0038\u20E3","\u0039\u20E3"];
-const timeToAnswer: number = 30000;
+    "\u0038\u20E3","\u0039\u20E3"]
+const TIME_TO_ANSWER: number = 30000
+const EDIT_INTERVAL: number = 2000
+const PROGRESS_BAR_LENGTH: number = 30
+const PROGRESS_BAR_LANGUAGES: string[] = ["css", "ini", ""]
 
 type TriviaQuestion = {
     question: string;
@@ -27,7 +30,15 @@ function shuffle(arr: any[]): any[] {
 }
 
 function reactionFilter(reaction: MessageReaction, user: User): boolean {
-    return reactionNumbers.includes(reaction.emoji.name) && !(user instanceof ClientUser)
+    return REACTION_NUMBERS.includes(reaction.emoji.name) && !(user instanceof ClientUser)
+}
+
+function getProgressBar(startTime: number, currentTime: number, totalTime: number): string {
+    const progress: number = 1.0 - ((currentTime - startTime) / totalTime)
+    const numEquals: number = Math.floor(PROGRESS_BAR_LENGTH * progress)
+    const numDash: number = PROGRESS_BAR_LENGTH - numEquals
+    const language: string = PROGRESS_BAR_LANGUAGES[Math.floor(progress * PROGRESS_BAR_LANGUAGES.length)]
+    return `\`\`\`${language}\n[${"=".repeat(numEquals)}${"-".repeat(numDash)}]\n\`\`\``
 }
 
 async function handleTrivia(channel: TextChannel | DMChannel): Promise<void> {
@@ -39,21 +50,40 @@ async function handleTrivia(channel: TextChannel | DMChannel): Promise<void> {
     const allAnswers: string[] = shuffle(question.incorrect_answers.concat([question.correct_answer]))
         .map(s => decodeURIComponent(s))
     const correctIndex: number = allAnswers.indexOf(correctAnswer)
+    const startTime: number = Date.now()
 
     const messageText: string = `__Category: ${categoryText}__\n> **${questionText}**\n` + 
         allAnswers.map((val, i) => `${i + 1}: ${val}`).join("\n")
+        
+    // Send the message
+    const sentMessage: Message = await channel.send(messageText + 
+        "\n" + getProgressBar(startTime, Date.now(), TIME_TO_ANSWER))
 
-    const sentMessage: Message = await channel.send(messageText)
+    // Start an edit timer; every 2000ms, edit the message with a refreshed progress bar.
+    const interval = setInterval(() => {
+        sentMessage.edit(messageText + 
+            "\n" + getProgressBar(startTime, Date.now(), TIME_TO_ANSWER))
+    }, EDIT_INTERVAL)
+
+    // React to the message with [1], [2], [3], [4] in order
     allAnswers.forEach(async (q, i) => {
-        await sentMessage.react(reactionNumbers[i + 1])
+        await sentMessage.react(REACTION_NUMBERS[i + 1])
     })
-    
-    const collector = sentMessage.createReactionCollector(reactionFilter, {time: timeToAnswer})
+
+    // Collect reactions
+    const collector = sentMessage.createReactionCollector(reactionFilter, {time: TIME_TO_ANSWER})
     collector.on("end", async collected => {
+        // Stop editing the message
+        clearInterval(interval)
+
+        // Remove the progress bar from the message with one last edit. No need to await
+        sentMessage.edit(messageText)
+
+        // Determine winners and losers, and print them
         const winners: User[] = []
         const losers: User[] = []
         collected.forEach((reaction, emoji) => {
-            const index = reactionNumbers.indexOf(emoji) - 1
+            const index = REACTION_NUMBERS.indexOf(emoji) - 1
             if (index === correctIndex) {
                 reaction.users.filter(u => !(u instanceof ClientUser))
                     .forEach(u => winners.push(u))
