@@ -81,7 +81,7 @@ async function handleTrivia(channel: TextChannel | DMChannel): Promise<void> {
         const winners: User[] = []
         const losers: User[] = []
         collected.forEach((reaction, emoji) => {
-            const index = REACTION_NUMBERS.indexOf(emoji) - 1
+            const index = REACTION_NUMBERS.indexOf(emoji);
             if (index === correctIndex) {
                 reaction.users.filter(u => !(u instanceof ClientUser))
                     .forEach(u => winners.push(u))
