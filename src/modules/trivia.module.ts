@@ -32,10 +32,10 @@ function reactionFilter(reaction: MessageReaction, user: User): boolean {
 }
 
 function getProgressBar(startTime: number, currentTime: number, totalTime: number): string {
-    const progress: number = 1.0 - ((currentTime - startTime) / totalTime)
-    const numEquals: number = Math.floor(PROGRESS_BAR_LENGTH * progress)
-    const numDash: number = PROGRESS_BAR_LENGTH - numEquals
-    const language: string = PROGRESS_BAR_LANGUAGES[Math.floor(progress * PROGRESS_BAR_LANGUAGES.length)]
+    const progress: number = Math.max(0.0, 1.0 - ((currentTime - startTime) / totalTime));
+    const numEquals: number = Math.floor(PROGRESS_BAR_LENGTH * progress);
+    const numDash: number = PROGRESS_BAR_LENGTH - numEquals;
+    const language: string = PROGRESS_BAR_LANGUAGES[Math.floor(progress * PROGRESS_BAR_LANGUAGES.length)];
     return `\`\`\`${language}\n[${"=".repeat(numEquals)}${"-".repeat(numDash)}]\n\`\`\``
 }
 
