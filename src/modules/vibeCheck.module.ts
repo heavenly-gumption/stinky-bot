@@ -1,5 +1,5 @@
 import { BotModule } from "../types"
-import { Client, Message, PartialMessage, ClientUser } from "discord.js"
+import { Client, Message, ClientUser } from "discord.js"
 import { getLastNVibes, addVibe } from "../types/models/vibehistory"
 
 const VIBE_CHECK_MAX = 20
@@ -9,13 +9,13 @@ const SECONDS_IN_MINUTE = 60
 const LOCKOUT_MINUTES = 60
 const LOCKOUT_MILLIS = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * LOCKOUT_MINUTES
 
-async function doVibeCheck(message: Message | PartialMessage) {
+async function doVibeCheck(message: Message) {
     const vibeCheck = Math.floor(Math.random() * VIBE_CHECK_MAX + 1)
     addVibe(message.author!.id, vibeCheck)
     await message.channel!.send("Current Vibe: `" + vibeCheck + "`")
 }
 
-async function handleVibeCheckMessage(message: Message | PartialMessage) {
+async function handleVibeCheckMessage(message: Message) {
     if (!message.author || !message.channel) {
         return
     }
@@ -37,7 +37,7 @@ async function handleVibeCheckMessage(message: Message | PartialMessage) {
     }
 }
 
-async function handleLastNVibesMessage(message: Message | PartialMessage) {
+async function handleLastNVibesMessage(message: Message) {
     if (!message.author || !message.channel) {
         return
     }
