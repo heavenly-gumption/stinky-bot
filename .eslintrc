@@ -22,7 +22,7 @@
         ],
         "no-magic-numbers": [
             "error",
-            { "ignore": [0, 1] }
+            { "ignore": [0, 1, 2] }
         ],
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-explicit-any": 1,
