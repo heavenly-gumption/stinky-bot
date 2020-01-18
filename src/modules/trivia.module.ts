@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
 import { ClientUser, User, Message, MessageReaction, 
-    PartialMessage, TextChannel, DMChannel, Client } from "discord.js"
+    TextChannel, DMChannel, GroupDMChannel, Client } from "discord.js"
 import axios from "axios"
 
 const REACTION_NUMBERS: string[] = ["\u0031\u20E3","\u0032\u20E3","\u0033\u20E3","\u0034\u20E3"]
@@ -39,7 +39,7 @@ function getProgressBar(startTime: number, currentTime: number, totalTime: numbe
     return `\`\`\`${language}\n[${"=".repeat(numEquals)}${"-".repeat(numDash)}]\n\`\`\``
 }
 
-async function handleTrivia(channel: TextChannel | DMChannel): Promise<void> {
+async function handleTrivia(channel: TextChannel | DMChannel | GroupDMChannel): Promise<void> {
     const trivia = await axios.get("https://opentdb.com/api.php?amount=1&type=multiple&encode=url3986")
     const question: TriviaQuestion = trivia.data.results[0]
     const categoryText: string = decodeURIComponent(question.category)
@@ -54,8 +54,15 @@ async function handleTrivia(channel: TextChannel | DMChannel): Promise<void> {
         allAnswers.map((val, i) => `${i + 1}: ${val}`).join("\n")
         
     // Send the message
-    const sentMessage: Message = await channel.send(messageText + 
+    const sendResponse: Message | Array<Message> = await channel.send(messageText + 
         "\n" + getProgressBar(startTime, Date.now(), TIME_TO_ANSWER))
+
+    let sentMessage: Message
+    if (sendResponse instanceof Array) {
+        sentMessage = sendResponse[0]
+    } else {
+        sentMessage = sendResponse
+    }
 
     // Start an edit timer; every 2000ms, edit the message with a refreshed progress bar.
     const interval = setInterval(() => {
