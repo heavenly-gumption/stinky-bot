@@ -6,7 +6,7 @@ const VIBE_CHECK_MAX = 20
 const LAST_N_VIBES_MAX = 50
 const MILLIS_IN_SECOND = 1000
 const SECONDS_IN_MINUTE = 60
-const LOCKOUT_MINUTES = 0.01
+const LOCKOUT_MINUTES = 60
 const LOCKOUT_MILLIS = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * LOCKOUT_MINUTES
 
 async function doVibeCheck(message: Message | PartialMessage) {
@@ -80,7 +80,7 @@ async function handleLastNVibesMessage(message: Message | PartialMessage) {
 export const VibeCheckModule: BotModule = (client: Client) => {
     console.log("Loaded VibeCheckModule")
     client.on("message", async message => {
-        if (message.channel && message.content === "vibbe check") {
+        if (message.channel && message.content === "vibe check") {
             await handleVibeCheckMessage(message)
         } else if (message.channel 
             && message.content 
