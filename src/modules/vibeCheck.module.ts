@@ -11,7 +11,7 @@ const LOCKOUT_MILLIS = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * LOCKOUT_MINUTES
 
 async function doVibeCheck(message: Message) {
     const vibeCheck = Math.floor(Math.random() * VIBE_CHECK_MAX + 1)
-    addVibe(message.author!.id, vibeCheck)
+    await addVibe(message.author!.id, vibeCheck)
     await message.channel!.send("Current Vibe: `" + vibeCheck + "`")
 }
 
@@ -68,7 +68,7 @@ async function handleLastNVibesMessage(message: Message) {
     const sum = sortedVibes.reduce((prev, cur) => prev + cur)
     const avg = sum / trueN
     const median = trueN % 2 == 0 ?
-         (sortedVibes[Math.floor(trueN / 2)] + sortedVibes[Math.ceil(trueN / 2)]) / 2 :
+         (sortedVibes[Math.floor(trueN / 2)] + sortedVibes[Math.floor(trueN / 2) - 1]) / 2 :
          sortedVibes[Math.floor(trueN / 2)]
 
     await message.channel.send(`**Your last ${trueN} vibes:**\n` +
