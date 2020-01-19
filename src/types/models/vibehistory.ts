@@ -7,7 +7,7 @@ interface VibeHistory {
 }
 
 export function getLastNVibes(id: string, n: number): Promise<VibeHistory[]> {
-    return db.manyOrNone('SELECT * FROM VibeHistory WHERE id = $1 ORDER BY time ASC LIMIT $2', [id, n])
+    return db.manyOrNone('SELECT * FROM VibeHistory WHERE id = $1 ORDER BY time DESC LIMIT $2', [id, n])
 }
 
 export function addVibe(id: string, vibe: number): Promise<null> {
