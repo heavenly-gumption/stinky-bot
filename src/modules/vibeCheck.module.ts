@@ -1,6 +1,7 @@
 import { BotModule } from "../types"
 import { Client, Message, ClientUser } from "discord.js"
-import { getLastNVibes, addVibe } from "../types/models/vibehistory"
+import { getLastNVibes, addVibe, getDailyVibeStats } from "../types/models/vibehistory"
+import { makeTable } from "../utils/format"
 
 const VIBE_CHECK_MAX = 20
 const LAST_N_VIBES_MAX = 50
@@ -77,9 +78,46 @@ async function handleLastNVibesMessage(message: Message) {
         `**Median:** ${median.toFixed(1)}\n`)
 }
 
+async function handleDailyVibeStats(message: Message) {
+    console.log("Handling Daily Vibe Stats")
+    const stats = await getDailyVibeStats()
+    console.log(JSON.stringify(stats, null, 2))
+    if (stats.length === 0) {
+        await message.channel.send("Not enough stats to make a daily table")
+        return
+    }
+    const headers = [
+        "ID",
+        "Avg. Vibe",
+        "Max. Vibe",
+        "Min. Vibe",
+        "# of Vibes",
+        "Last Vibe Time"
+    ]
+    const rows = stats.map(stat => {
+        return [
+            stat.id,
+            stat.averageVibe.toFixed(2),
+            stat.maxVibe.toFixed(0),
+            stat.minVibe.toFixed(0),
+            stat.numberOfVibes.toFixed(0),
+            stat.mostRecentVibe
+        ]
+    })
+    console.log(JSON.stringify(rows, null, 2))
+    const formattedTable = [
+        "```",
+        makeTable([headers,...rows]).join("\n"),
+        "```"
+    ].join("\n")
+    console.log(formattedTable)
+    await message.channel.send(formattedTable)
+}
+
 export const VibeCheckModule: BotModule = (client: Client) => {
     console.log("Loaded VibeCheckModule")
     client.on("message", async message => {
+        console.log("Vibe Message")
         if (message.channel && message.content === "vibe check") {
             await handleVibeCheckMessage(message)
         } else if (message.channel 
@@ -88,6 +126,8 @@ export const VibeCheckModule: BotModule = (client: Client) => {
             && message.content.match(/^last \d+ vibes?/)) {
 
             await handleLastNVibesMessage(message)
+        } else if (message.channel && message.content === "daily vibe stats") {
+            await handleDailyVibeStats(message)
         }
     })
 }
