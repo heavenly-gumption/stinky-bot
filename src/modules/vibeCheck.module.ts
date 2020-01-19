@@ -61,7 +61,7 @@ async function handleLastNVibesMessage(message: Message) {
         return
     }
 
-    const lastNVibes: number[] = lastNVibesResponse.map(v => v.vibe)
+    const lastNVibes: number[] = lastNVibesResponse.map(v => v.vibe).reverse()
     const trueN: number = lastNVibes.length
     const sortedVibes: number[] = [...lastNVibes].sort((a, b) => a - b)
 
