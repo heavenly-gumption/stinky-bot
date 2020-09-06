@@ -7,7 +7,7 @@ import { Reminder, getDueReminders, createReminder,
 import * as chrono from "chrono-node"
 import { CronJob } from "cron"
 
-const COMMAND_REGEX: RegExp = /!remindmee (.+?) to (.+)/
+const COMMAND_REGEX: RegExp = /!remindme (.+?) to (.+)/
 
 function createEmbed(author: string, date: Date, content: string): RichEmbed {
     // Create time string like "9/6/2020, 11:46:39 AM PDT"
