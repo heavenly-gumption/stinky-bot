@@ -1,5 +1,6 @@
 import { BotModule } from "../types"
-import { Client, Message, MessageReaction, User, Channel, TextChannel } from "discord.js"
+import { Client, Message, MessageReaction, User, Channel, 
+    TextChannel, RichEmbed } from "discord.js"
 import { Reminder, getDueReminders, createReminder, 
     addInterestedToReminder, removeReminder } from "../types/models/reminder"
 
@@ -8,14 +9,44 @@ import { CronJob } from "cron"
 
 const COMMAND_REGEX: RegExp = /!remindme (.+?) to (.+)/
 
+function createEmbed(author: string, date: Date, content: string): RichEmbed {
+    // Create time string like "9/6/2020, 11:46:39 AM PDT"
+    const timeString = date.toLocaleString("en-US",
+        {timeZone: "America/Los_Angeles", timeZoneName: "short"})
+    return new RichEmbed({
+        "title": "ReminderBot",
+        "description": `<@${author}> created a reminder.`,
+        "color": 13632027,
+        "footer": {
+            "text": "Usage: !remindme <time> to <event>"
+        },
+        "fields": [
+            {
+                "name": "\u23F0 Date",
+                "value": `**${timeString}**`
+            },
+            {
+                "name": ":clipboard: Event",
+                "value": content
+            },
+            {
+                "name": "\u200b",
+                "value": "\u200b"
+            },
+            {
+                "name": "Want to be reminded?",
+                "value": "React to this message to also be reminded of this event."
+            }
+        ]
+    })
+}
 
 // Creates a reminder at a given time specified with natural language.
 async function handleMessage(match: RegExpMatchArray, message: Message) {
     const date: Date = chrono.parseDate(match[1], new Date(), {forwardDate: true})
     const content: string = match[2]
     const reminderMessages: Message | Array<Message> = await message.channel.send(
-        `Created reminder at:\n\u23F0 **${date}** \n to *${content}*.\n\n` +
-        "React to this message to also be reminded of this event.")
+        createEmbed(message.author.id, date, content))
     const reminderMessage: Message = Array.isArray(reminderMessages) ? 
         reminderMessages[0] : reminderMessages
     await createReminder(reminderMessage.id, date, content, message.author.id, message.channel.id)
@@ -44,7 +75,7 @@ export const ReminderModule: BotModule = (client: Client) => {
         const reminders: Array<Reminder> = await getDueReminders()
         reminders.forEach(async (reminder) => {
             const mentions: string = reminder.interested.map((s) => `<@${s}>`).join(", ")
-            const message: string = mentions + "\nReminder: " + reminder.content
+            const message: string = mentions + "\n**Reminder:** " + reminder.content
             const channel: Channel | undefined = client.channels.get(reminder.channel)
             if (channel !== undefined) {
                 await (channel as TextChannel).send(message)
