@@ -6,6 +6,7 @@ import { PingModule } from "./ping.module"
 import { VibeCheckModule } from "./vibeCheck.module"
 import { MoneyModule } from "./money.module"
 import { TriviaModule } from "./trivia.module"
+import { ReminderModule } from "./reminder.module"
 
 export function makeModulePath(moduleName: string): string {
     return `${moduleName}.module.js`
@@ -17,7 +18,8 @@ export function loadEnabledModules(): BotModule[] {
         PingModule,
         VibeCheckModule,
         MoneyModule,
-        TriviaModule
+        TriviaModule,
+        ReminderModule
     ]
 }
 
