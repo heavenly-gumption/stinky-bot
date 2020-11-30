@@ -7,15 +7,19 @@ import { TeX } from "mathjax-full/js/input/tex"
 import { SVG } from "mathjax-full/js/output/svg"
 import { convertSVGtoPNG } from "../utils/svg2png"
 import { LiteElement } from "mathjax-full/js/adaptors/lite/Element"
+import { AllPackages } from "mathjax-full/js/input/tex/AllPackages"
 
-const EQ_COMMAND_REGEX = /\$eq (?<equation>(.|\n)*)/
+const EQ_COMMAND_REGEX = /\$eq(\s)*```(?<equation>(.|\n)*)```/
 const MATH_JAX_OPTIONS = {
-    InputJax: new TeX({ packages: ["base", "amsmath"]}),
+    InputJax: new TeX({
+        packages: AllPackages
+    }),
     OutputJax: new SVG()
 }
-const EX_TO_PX_FACTOR = 25
-const DEFAULT_PX_WIDTH = 640
-const DEFAULT_PX_HEIGHT = 480
+
+const EX_TO_PX_FACTOR = 12
+const DEFAULT_PX_WIDTH = 160
+const DEFAULT_PX_HEIGHT = 120
 
 const adaptor = liteAdaptor()
 RegisterHTMLHandler(adaptor)
@@ -38,7 +42,9 @@ function isEx(size: string | null): boolean {
 
 function renderMathJax(document: string) {
     const html = mathjax.document("", MATH_JAX_OPTIONS)
-    const node = html.convert(document, {})
+    const node = html.convert(document, {
+        display: true
+    })
     const svgNode = adaptor.firstChild(node) as LiteElement
     const exWidth = adaptor.getAttribute(svgNode, "width")
     const exHeight = adaptor.getAttribute(svgNode, "height")
@@ -46,6 +52,7 @@ function renderMathJax(document: string) {
     const pxHeight = isEx(exHeight) ? exToPixels(exHeight) : DEFAULT_PX_HEIGHT
     adaptor.setAttribute(svgNode, "width", pxWidth)
     adaptor.setAttribute(svgNode, "height", pxHeight)
+    adaptor.setAttribute(svgNode, "style", "background-color:white;color:black")
     const svg = adaptor.innerHTML(node)
     console.log(svg)
     return svg
@@ -75,14 +82,21 @@ async function handleMathJax(message: Message) {
         const svgData = renderMathJax(document)
         const pngBuffer = await convertSVGtoPNG(id, svgData)
         console.log("Successfully rendered png")
-        return message.channel.send(`~ Done parsing for ${id} ~`, {
+        await message.delete()
+        .then(message => {
+            console.log(`Deleted message from ${message.author.id}`)
+        })
+        .catch(err => {
+            console.log(err)
+        })
+        return message.channel.send(`<@${message.author.id}>`, {
             file: {
                 attachment: pngBuffer
             }
         })
     } catch (error) {
         console.log(error)
-        return message.channel.send(`~ Error parsing for ${id} ~`)
+        console.log(`~ Error parsing for ${id} ~`)
     }
 
 }
