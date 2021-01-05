@@ -24,7 +24,7 @@
     "@types/node": "^12.11.7",
     "@types/pg": "^7.11.2",
     "@types/ws": "^6.0.3",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "chrono-node": "^2.1.8",
     "cron": "^1.8.2",
     "discord.js": "^11.5.1",
