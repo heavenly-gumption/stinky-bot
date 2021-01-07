@@ -54,7 +54,6 @@ function renderMathJax(document: string) {
     adaptor.setAttribute(svgNode, "height", pxHeight)
     adaptor.setAttribute(svgNode, "style", "background-color:white;color:black")
     const svg = adaptor.innerHTML(node)
-    console.log(svg)
     return svg
 }
 
@@ -67,7 +66,6 @@ function extractMathJaxFromMessageContent(messageContent: string): string {
         }
     }
     const equationString = equations.join("\n")
-    console.log(equationString)
     return equationString
 }
 
@@ -81,13 +79,9 @@ async function handleMathJax(message: Message) {
         const document = extractMathJaxFromMessageContent(message.content)
         const svgData = renderMathJax(document)
         const pngBuffer = await convertSVGtoPNG(id, svgData)
-        console.log("Successfully rendered png")
         await message.delete()
-        .then(message => {
-            console.log(`Deleted message from ${message.author.id}`)
-        })
         .catch(err => {
-            console.log(err)
+            console.error(err)
         })
         return message.channel.send(`<@${message.author.id}>`, {
             file: {
@@ -95,8 +89,7 @@ async function handleMathJax(message: Message) {
             }
         })
     } catch (error) {
-        console.log(error)
-        console.log(`~ Error parsing for ${id} ~`)
+        console.error(error)
     }
 
 }
