@@ -8,6 +8,35 @@ const MILLIS_IN_SECOND = 1000
 const SECONDS_IN_MINUTE = 60
 const LOCKOUT_MINUTES = 60
 const LOCKOUT_MILLIS = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * LOCKOUT_MINUTES
+const HUNDRED = 100
+const PCT_PRECISION = 5
+
+// Returns the number of sequences of n k-sided dice that sum to s
+const memoizedCache = new Map<string, number>()
+function ways(k: number, n: number, s: number): number {
+    const key = `${k}-${n}-${s}`
+    const memoizedValue: number | undefined = memoizedCache.get(key)
+    if (memoizedValue !== undefined) {
+        return memoizedValue
+    }
+
+    if (k * n < s) {
+        memoizedCache.set(key, 0)
+        return 0
+    }
+    if (n === 1) {
+        memoizedCache.set(key, 1)
+        return 1
+    }
+    const lo = Math.max(1, s - k * (n-1))
+    const hi = Math.min(k, s - (n-1))
+    let ans = 0
+    for(let value = lo; value <= hi; value++) {
+        ans += ways(k, n-1, s-value)
+    }
+    memoizedCache.set(key, ans)
+    return ans
+}
 
 async function doVibeCheck(message: Message) {
     const vibeCheck = Math.floor(Math.random() * VIBE_CHECK_MAX + 1)
@@ -70,11 +99,18 @@ async function handleLastNVibesMessage(message: Message) {
     const median = trueN % 2 == 0 ?
          (sortedVibes[Math.floor(trueN / 2)] + sortedVibes[Math.floor(trueN / 2) - 1]) / 2 :
          sortedVibes[Math.floor(trueN / 2)]
+    let cumulativeWays = 0
+    for (let s = trueN; s <= sum; s++) {
+        cumulativeWays += ways(VIBE_CHECK_MAX, trueN, s)
+    }
+    const totalWays = Math.pow(VIBE_CHECK_MAX, trueN)
+    const pctChanceHigherAvg = (1 - (cumulativeWays / totalWays)) * HUNDRED
 
     await message.channel.send(`**Your last ${trueN} vibes:**\n` +
         lastNVibes.join(", ") + "\n\n" +
         `**Average:** ${avg.toFixed(1)}\n` +
-        `**Median:** ${median.toFixed(1)}\n`)
+        `**Median:** ${median.toFixed(1)}\n` +
+        `The chance of having a higher average vibe across ${trueN} vibe checks is ${pctChanceHigherAvg.toPrecision(PCT_PRECISION)}%.`)
 }
 
 export const VibeCheckModule: BotModule = (client: Client) => {
