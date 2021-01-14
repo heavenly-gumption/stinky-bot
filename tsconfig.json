@@ -1,5 +1,8 @@
 {
     "compilerOptions": {
+        "lib": [
+            "ES2020.String"
+        ],
         "module": "commonjs",
         "resolveJsonModule": true,
         "esModuleInterop": true,
@@ -10,13 +13,15 @@
         "strictFunctionTypes": true,
         "moduleResolution": "node",
         "sourceMap": true,
+        "skipLibCheck": true,
         "outDir": "dist",
         "rootDir": "src",
         "baseUrl": ".",
         "paths": {
             "*": [
                 "node_modules/*",
-                "src/types/*"
+                "src/types/*",
+                "typings/*"
             ],
         }
     },
