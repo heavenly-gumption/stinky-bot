@@ -5,6 +5,6 @@ OUTFILEPATH="${TEMP_DIRECTORY}/${SVG_NAME}.png"
 echo "${FILEPATH}"
 inkscape \
     --export-png="${OUTFILEPATH}" \
-    --export-dpi=100 \
+    --export-dpi=2 \
     --export-background="#ffffffff" \
     "${FILEPATH}"
