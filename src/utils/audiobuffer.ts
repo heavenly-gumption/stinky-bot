@@ -1,6 +1,5 @@
 import { PCMBuffer, PCMBufferWriter } from "../types/audiobuffer"
 import { Writable } from "stream"
-import { FileWriter } from "wav"
 
 const SAMPLE_RATE = 48000
 const BIT_DEPTH = 16
@@ -62,41 +61,6 @@ export function clearBuffer(buffer: PCMBuffer, start: number, end: number): void
         buffer.data.fill(0, start, buffer.data.length)
         buffer.data.fill(0, 0, end)
     }
-}
-
-export function writeBufferToFile(buffer: PCMBuffer, filename: string, duration: number): void {
-    if (duration <= 0) {
-        throw "Offset must be greater than 0"
-    }
-
-    if (duration >= buffer.duration) {
-        throw "Offset must be less than the buffer duration"
-    }
-
-    const end = timeToOffset(buffer, 0)
-    let start = timeToOffset(buffer, -duration)
-    
-    // skip buffer silence
-    while (start !== end && buffer.data.readInt16LE(start) === 0) {
-        start = (start + BYTES_PER_SAMPLE) % buffer.data.length
-    }
-    
-    // create the wav file
-    const stream = new FileWriter(filename, {
-        sampleRate: SAMPLE_RATE,
-        channels: 1,
-    })
-
-    if (end > start) {
-        // no wrapping
-        stream.write(buffer.data.subarray(start, end))
-    } else {
-        // wraps around
-        stream.write(buffer.data.slice(start, buffer.data.length))
-        stream.write(buffer.data.slice(0, end))
-    }
-
-    stream.end()
 }
 
 export function prepareBuffer(buffer: PCMBuffer, duration: number): Buffer {

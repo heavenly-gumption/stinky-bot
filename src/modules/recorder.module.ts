@@ -328,7 +328,7 @@ async function handleMessage(message: Message) {
 
             // !clip rename <old> <new>
             case "rename":
-                await handleRenameClip(args[1], args[2], message.channel)
+                await handleRenameClip(args[2], args[3], message.channel)
                 break
 
             // !clip delete <name>
@@ -361,12 +361,12 @@ export const RecorderModule: BotModule = (client: Client) => {
         const oldUserChannel: VoiceChannel | null = oldMember.channel
 
         // User joined voice channel
-        if (newUserChannel && newUserChannel.id === "796162018263826432") {
+        if (newUserChannel && newUserChannel.id === process.env.VOICE_CHANNEL) {
             await joinChannel(newUserChannel)
         }
 
         // User left voice channel
-        else if (!newUserChannel && oldUserChannel && oldUserChannel.id === "796162018263826432") {
+        else if (!newUserChannel && oldUserChannel && oldUserChannel.id === process.env.VOICE_CHANNEL) {
             await leaveChannel(oldUserChannel)
         }
     })
