@@ -42,6 +42,43 @@ type VoiceChannelData = {
 const voiceChannels: Map<string, VoiceChannelData> = new Map()
 const userState: Map<string, boolean> = new Map()
 
+
+function randomClipId() {
+    let id: string = ""
+    for (let i = 0; i < CLIP_ID_LEN; i++) {
+        id += CLIP_ID_CHARS[Math.floor(Math.random() * CLIP_ID_CHARS.length)]
+    }
+    return id
+}
+
+
+async function getClipFromS3(clip: Clip): Promise<Buffer> {
+    const params = {
+        Bucket: BUCKET,
+        Key: `${clip.id}.pcm`,
+        Range: `bytes=${clip.clipstart}-${clip.clipend}`
+    }
+
+    const data = await s3.getObject(params).promise()
+    if (data.Body instanceof Buffer) {
+        return data.Body
+    } else {
+        throw data.Body
+    }
+}
+
+async function uploadClipToS3(clipId: string, buffer: Buffer): Promise<Record<string, any>> {
+    const params = {
+        Bucket: BUCKET,
+        Key: `${clipId}.${FILE_EXT}`,
+        Body: buffer
+    }
+
+    // Upload file to S3
+    const data = await s3.upload(params).promise()
+    return data
+}
+
 function onUserChangeState(channelId: string, user: User, speaking: Readonly<Speaking>) {
     // If user is speaking already, return (this event can get fired twice)
     if (userState.get(user.id) && speaking.has(Speaking.FLAGS.SPEAKING)) {
@@ -119,15 +156,7 @@ async function leaveChannel(channel: VoiceChannel) {
     }
 }
 
-function randomClipId() {
-    let id: string = ""
-    for (let i = 0; i < CLIP_ID_LEN; i++) {
-        id += CLIP_ID_CHARS[Math.floor(Math.random() * CLIP_ID_CHARS.length)]
-    }
-    return id
-}
-
-async function saveClip(channel: VoiceChannel, clipName: string, textChannel: TextChannel) {
+async function handleSaveClip(channel: VoiceChannel, clipName: string, textChannel: TextChannel) {
     const voiceChannelData = voiceChannels.get(channel.id)
     if (!voiceChannelData) {
         return
@@ -142,69 +171,45 @@ async function saveClip(channel: VoiceChannel, clipName: string, textChannel: Te
     const buffer: Buffer = prepareBuffer(voiceChannelData.buffer, BUFFER_WRITE_SEC)
     const clipId: string = randomClipId()
     const name = clipName ? clipName : clipId
-    const params = {
-        Bucket: BUCKET,
-        Key: `${clipId}.${FILE_EXT}`,
-        Body: buffer
-    }
 
     // Upload file to S3
-    s3.upload(params, (err: Error, data: Record<string, any>) => {
-        if (err) {
-            console.log(err)
-            return
-        }
-
-        // Write entry to database
-        const clip = {
-            id: clipId,
-            time: new Date(),
-            name: name,
-            url: data.Location,
-            clipstart: 0,
-            clipend: buffer.length,
-            participants: channel.members.map(member => member.id)
-        }
-
-        createClip(clip).then(async res => {
-            voiceChannelData.lastClipTime = now
-            await textChannel.send(`Saved clip with name ${name}`)
-        })
-        .catch(err => {
-            // try inserting with name-timestamp
-            clip.name = clip.name + "-" + Math.floor(now.getTime() / MILLIS)
-            createClip(clip).then(async res => {
-                voiceChannelData.lastClipTime = now
-                await textChannel.send(`Saved clip with name ${clip.name}`)
-            }).catch(err => {
-                console.log(err)
-            })
-        })
-    })
-}
-
-async function getClipFromS3(clip: Clip): Promise<Buffer> {
-    const params = {
-        Bucket: BUCKET,
-        Key: `${clip.id}.pcm`,
-        Range: `bytes=${clip.clipstart}-${clip.clipend}`
+    let data
+    try {
+        data = await uploadClipToS3(clipId, buffer)
+    } catch (err) {
+        console.log(err)
+        return await textChannel.send("Error uploading file to S3: " + err)
     }
 
-    return new Promise<Buffer>((resolve, reject) => {
-        s3.getObject(params, (err, data) => {
-            if (err) {
-                reject(err)
-            } else if (!(data.Body instanceof Buffer)) {
-                reject(data.Body)
-            } else {
-                resolve(data.Body)
-            }
-        })
-    })
-    
+    // Write entry to database
+    const clip = {
+        id: clipId,
+        time: new Date(),
+        name: name,
+        url: data.Location,
+        clipstart: 0,
+        clipend: buffer.length,
+        participants: channel.members.map(member => member.id)
+    }
+
+    try {
+        await createClip(clip)
+        voiceChannelData.lastClipTime = now
+        await textChannel.send(`Saved clip with name ${name}`)
+    } catch (err) {
+        // try inserting with name-timestamp
+        clip.name = clip.name + "-" + Math.floor(now.getTime() / MILLIS)
+        try {
+            await createClip(clip)
+            voiceChannelData.lastClipTime = now
+            await textChannel.send(`Saved clip with name ${clip.name}`)
+        } catch (err) {
+            console.log(err)
+        }
+    }
 }
 
-async function playClip(channel: VoiceChannel, clipName: string, textChannel: TextChannel) {
+async function handlePlayClip(channel: VoiceChannel, clipName: string, textChannel: TextChannel) {
     const voiceChannelData = voiceChannels.get(channel.id)
     if (!voiceChannelData) {
         return
@@ -217,7 +222,9 @@ async function playClip(channel: VoiceChannel, clipName: string, textChannel: Te
         return await textChannel.send("Could not find a clip with that name.")
     }
 
-    getClipFromS3(clip).then(buffer => {
+    let buffer
+    try {
+        buffer = await getClipFromS3(clip)
         // data from s3 is stored in single channel. need to convert to stereo
         const converted = Buffer.alloc(buffer.length * 2)
         for (let i = 0; i < buffer.length; i += 2) {
@@ -235,9 +242,9 @@ async function playClip(channel: VoiceChannel, clipName: string, textChannel: Te
         })
 
         voiceChannelData.connection.play(readable, {type: "converted"})
-    }).catch(err => {
+    } catch (err) {
         console.log(err)
-    })
+    }
 }
 
 async function handleListClips(textChannel: TextChannel) {
@@ -246,15 +253,18 @@ async function handleListClips(textChannel: TextChannel) {
 }
 
 async function handleRenameClip(oldName: string, newName: string, textChannel: TextChannel) {
-    getClipByName(oldName).then(async clip => {
-        renameClip(oldName, newName).then(async () => {
+    try {
+        const clip = await getClipByName(oldName)
+        try {
+            await renameClip(oldName, newName)
             return await textChannel.send(`Successfully renamed clip ${oldName} to ${newName}.`)
-        }).catch(async err => {
+        } catch (err) {
             return await textChannel.send("Clip with that name already exists.")
-        })
-    }).catch(async err => {
+        }
+        await textChannel.send(`Successfully renamed clip ${oldName} to ${newName}.`)
+    } catch(err) {
         return await textChannel.send("Could not find a clip with that name.")
-    })
+    }
 }
 
 async function handleDeleteClip(clipName: string, requester: string, textChannel: TextChannel) {
@@ -274,14 +284,13 @@ async function handleDeleteClip(clipName: string, requester: string, textChannel
         Key: `${clip.id}.pcm`
     }
 
-    s3.deleteObject(params, async (err, data) => {
-        if (err) {
-            console.log(err)
-        } else {
-            await deleteClipByName(clipName)
-            await textChannel.send(`Deleted clip ${clipName}`)
-        }
-    })
+    try {
+        await s3.deleteObject(params).promise()
+        await deleteClipByName(clipName)
+        await textChannel.send(`Deleted clip ${clipName}`)
+    } catch (err) {
+        console.log(err)
+    }
 }
 
 async function handleMessage(message: Message) {
@@ -300,7 +309,7 @@ async function handleMessage(message: Message) {
                 return
             }
             const name = args[1]
-            await playClip(message.member.voice.channel, name, message.channel)
+            await handlePlayClip(message.member.voice.channel, name, message.channel)
         }
     }
 
@@ -311,7 +320,7 @@ async function handleMessage(message: Message) {
             const clipName: string = args.length === 1 ? 
                 Math.floor(new Date().getTime() / MILLIS) + "" : 
                 args[1]
-            await saveClip(message.member.voice.channel, clipName, message.channel)
+            await handleSaveClip(message.member.voice.channel, clipName, message.channel)
         } else {
             await message.channel.send("You must be in the recording channel to save a clip.")
         }
