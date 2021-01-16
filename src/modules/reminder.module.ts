@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
-import { Client, Message, MessageReaction, User, Channel, 
-    TextChannel, RichEmbed } from "discord.js"
+import { Client, Message, MessageReaction, PartialUser, User, Channel, 
+    TextChannel, MessageEmbed } from "discord.js"
 import { Reminder, getDueReminders, createReminder, 
     addInterestedToReminder, removeReminder } from "../types/models/reminder"
 
@@ -9,11 +9,11 @@ import { CronJob } from "cron"
 
 const COMMAND_REGEX: RegExp = /!remindme (.+?) to (.+)/
 
-function createEmbed(author: string, date: Date, content: string): RichEmbed {
+function createEmbed(author: string, date: Date, content: string): MessageEmbed {
     // Create time string like "9/6/2020, 11:46:39 AM PDT"
     const timeString = date.toLocaleString("en-US",
         {timeZone: "America/Los_Angeles", timeZoneName: "short"})
-    return new RichEmbed({
+    return new MessageEmbed({
         "title": "ReminderBot",
         "description": `<@${author}> created a reminder.`,
         "color": 13632027,
@@ -64,7 +64,7 @@ export const ReminderModule: BotModule = (client: Client) => {
     })
 
     // When a user reacts to a message, add them to the list of users to ping. 
-    client.on("messageReactionAdd", async (reaction: MessageReaction, user: User) => {
+    client.on("messageReactionAdd", async (reaction: MessageReaction, user: User | PartialUser) => {
         await addInterestedToReminder(reaction.message.id, user.id)
     })
 
@@ -76,7 +76,7 @@ export const ReminderModule: BotModule = (client: Client) => {
         reminders.forEach(async (reminder) => {
             const mentions: string = reminder.interested.map((s) => `<@${s}>`).join(", ")
             const message: string = mentions + "\n**Reminder:** " + reminder.content
-            const channel: Channel | undefined = client.channels.get(reminder.channel)
+            const channel: Channel | undefined = client.channels.cache.get(reminder.channel)
             if (channel !== undefined) {
                 await (channel as TextChannel).send(message)
             }

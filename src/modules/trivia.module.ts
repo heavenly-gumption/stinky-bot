@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
 import { ClientUser, User, Message, MessageReaction, 
-    TextChannel, DMChannel, GroupDMChannel, Client } from "discord.js"
+    TextChannel, DMChannel, NewsChannel, Client } from "discord.js"
 import axios from "axios"
 
 const REACTION_NUMBERS: string[] = ["\u0031\u20E3","\u0032\u20E3","\u0033\u20E3","\u0034\u20E3"]
@@ -39,7 +39,7 @@ function getProgressBar(startTime: number, currentTime: number, totalTime: numbe
     return `\`\`\`${language}\n[${"=".repeat(numEquals)}${"-".repeat(numDash)}]\n\`\`\``
 }
 
-async function handleTrivia(channel: TextChannel | DMChannel | GroupDMChannel): Promise<void> {
+async function handleTrivia(channel: TextChannel | DMChannel | NewsChannel): Promise<void> {
     const trivia = await axios.get("https://opentdb.com/api.php?amount=1&type=multiple&encode=url3986")
     const question: TriviaQuestion = trivia.data.results[0]
     const categoryText: string = decodeURIComponent(question.category)
@@ -90,10 +90,10 @@ async function handleTrivia(channel: TextChannel | DMChannel | GroupDMChannel): 
         collected.forEach((reaction, emoji) => {
             const index = REACTION_NUMBERS.indexOf(emoji)
             if (index === correctIndex) {
-                reaction.users.filter(u => !(u instanceof ClientUser))
+                reaction.users.cache.filter(u => !(u instanceof ClientUser))
                     .forEach(u => winners.push(u))
             } else {
-                reaction.users.filter(u => !(u instanceof ClientUser))
+                reaction.users.cache.filter(u => !(u instanceof ClientUser))
                     .forEach(u => losers.push(u))
             }
         })

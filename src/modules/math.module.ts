@@ -84,9 +84,9 @@ async function handleMathJax(message: Message) {
             console.error(err)
         })
         return message.channel.send(`<@${message.author.id}>`, {
-            file: {
+            files: [{
                 attachment: pngBuffer
-            }
+            }]
         })
     } catch (error) {
         console.error(error)
