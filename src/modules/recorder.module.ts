@@ -23,6 +23,7 @@ const BUFFER_LEN_SEC = process.env.RECORDING_BUFFER_LEN
     ? parseInt(process.env.RECORDING_BUFFER_LEN) : DEFAULT_BUFFER_LEN_SEC
 const BUFFER_WRITE_GAP = 5
 const BUFFER_WRITE_SEC = BUFFER_LEN_SEC - BUFFER_WRITE_GAP
+const MIN_CLIP_LEN_SEC = 10
 
 const CLEAR_INTERVAL_SEC = 1
 const MILLIS = 1000
@@ -156,10 +157,25 @@ async function leaveChannel(channel: VoiceChannel) {
     }
 }
 
-async function handleSaveClip(channel: VoiceChannel, clipName: string, textChannel: TextChannel) {
+async function handleSaveClip(channel: VoiceChannel, clipNameArg: string | undefined, clipDurationArg: string | undefined, textChannel: TextChannel) {
     const voiceChannelData = voiceChannels.get(channel.id)
     if (!voiceChannelData) {
         return
+    }
+
+    const clipName: string = clipNameArg ?? Math.floor(new Date().getTime() / MILLIS).toString()
+    let duration: number = clipDurationArg ?
+        Math.floor(parseFloat(clipDurationArg)) :
+        BUFFER_WRITE_SEC
+
+    if (duration < MIN_CLIP_LEN_SEC) {
+        textChannel.send(`Note: The minimum clip length is ${MIN_CLIP_LEN_SEC} seconds.`)
+        duration = MIN_CLIP_LEN_SEC
+    }
+
+    if (duration > BUFFER_WRITE_SEC) {
+        textChannel.send(`Note: You can clip up to a maximum of ${BUFFER_WRITE_SEC} seconds.`)
+        duration = BUFFER_WRITE_SEC
     }
 
     const now = new Date()
@@ -168,9 +184,8 @@ async function handleSaveClip(channel: VoiceChannel, clipName: string, textChann
     }
 
     // Prepare buffer for upload
-    const buffer: Buffer = prepareBuffer(voiceChannelData.buffer, BUFFER_WRITE_SEC)
+    const buffer: Buffer = prepareBuffer(voiceChannelData.buffer, duration)
     const clipId: string = randomClipId()
-    const name = clipName ? clipName : clipId
 
     // Upload file to S3
     let data
@@ -185,7 +200,7 @@ async function handleSaveClip(channel: VoiceChannel, clipName: string, textChann
     const clip = {
         id: clipId,
         time: new Date(),
-        name: name,
+        name: clipName,
         url: data.Location,
         clipstart: 0,
         clipend: buffer.length,
@@ -195,7 +210,7 @@ async function handleSaveClip(channel: VoiceChannel, clipName: string, textChann
     try {
         await createClip(clip)
         voiceChannelData.lastClipTime = now
-        await textChannel.send(`Saved clip with name ${name}`)
+        await textChannel.send(`Saved clip with name ${clipName}`)
     } catch (err) {
         // try inserting with name-timestamp
         clip.name = clip.name + "-" + Math.floor(now.getTime() / MILLIS)
@@ -317,10 +332,8 @@ async function handleMessage(message: Message) {
         // member must be in the voice channel
         if (message.member.voice.channel && voiceChannels.has(message.member.voice.channel.id)) {
             const args = message.content.split(" ")
-            const clipName: string = args.length === 1 ? 
-                Math.floor(new Date().getTime() / MILLIS) + "" : 
-                args[1]
-            await handleSaveClip(message.member.voice.channel, clipName, message.channel)
+            
+            await handleSaveClip(message.member.voice.channel, args[1], args[2], message.channel)
         } else {
             await message.channel.send("You must be in the recording channel to save a clip.")
         }
@@ -349,6 +362,12 @@ async function handleMessage(message: Message) {
             case "trim":
                 // TODO
                 break
+
+            // by default, assume they meant to type !clipit
+            default:
+                if (message.member.voice.channel) {
+                    await handleSaveClip(message.member.voice.channel, args[1], args[2], message.channel)
+                }
         }
     }
 }
@@ -375,7 +394,7 @@ export const RecorderModule: BotModule = (client: Client) => {
         }
 
         // User left voice channel
-        else if (!newUserChannel && oldUserChannel && oldUserChannel.id === process.env.VOICE_CHANNEL) {
+        else if (oldUserChannel && newUserChannel != oldUserChannel && oldUserChannel.id === process.env.VOICE_CHANNEL) {
             await leaveChannel(oldUserChannel)
         }
     })
