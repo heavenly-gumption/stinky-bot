@@ -165,15 +165,15 @@ async function handleSaveClip(channel: VoiceChannel, clipNameArg: string | undef
 
     const clipName: string = clipNameArg ?? Math.floor(new Date().getTime() / MILLIS).toString()
     let duration: number = clipDurationArg ?
-        Math.floor(parseFloat(clipDurationArg) * MILLIS) :
+        Math.floor(parseFloat(clipDurationArg)) :
         BUFFER_WRITE_SEC
 
-    if (duration < MIN_CLIP_LEN_SEC * MILLIS) {
+    if (duration < MIN_CLIP_LEN_SEC) {
         textChannel.send(`Note: The minimum clip length is ${MIN_CLIP_LEN_SEC} seconds.`)
         duration = MIN_CLIP_LEN_SEC
     }
 
-    if (duration > BUFFER_WRITE_SEC * MILLIS) {
+    if (duration > BUFFER_WRITE_SEC) {
         textChannel.send(`Note: You can clip up to a maximum of ${BUFFER_WRITE_SEC} seconds.`)
         duration = BUFFER_WRITE_SEC
     }
