@@ -8,6 +8,7 @@ export interface Clip {
     clipstart: number,
     clipend: number,
     participants: string[],
+    duration: number
 }
 
 /*
@@ -39,12 +40,17 @@ export function deleteClipByName(name: string): Promise<null> {
 }
 
 export function createClip(clip: Clip): Promise<null> {
-    return db.none('INSERT INTO Clips (id, time, name, url, clipstart, clipend, participants)' +
+    return db.none('INSERT INTO Clips (id, time, name, url, clipstart, clipend, participants, duration)' +
         'VALUES ($1, $2, $3, $4, $5, $6, $7)', 
         [clip.id, clip.time, clip.name, 
-        clip.url, clip.clipstart, clip.clipend, clip.participants])
+        clip.url, clip.clipstart, clip.clipend, clip.participants, clip.duration])
 }
 
 export function renameClip(oldName: string, newName: string): Promise<null> {
     return db.none('UPDATE Clips SET name = $1 WHERE name = $2', [newName, oldName])
+}
+
+export function trimClip(name: string, start: number, end: number): Promise<null> {
+    return db.none('UPDATE Clips SET clipstart = $2, clipend = $3 WHERE name = $1',
+        [name, start, end])
 }

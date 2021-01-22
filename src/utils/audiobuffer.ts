@@ -10,6 +10,18 @@ const MILLIS_PER_SECOND = 1000
 const INT_MAX = Math.pow(2, BIT_DEPTH - 1) - 1
 const INT_MIN = -Math.pow(2, BIT_DEPTH - 1)
 
+export function secondsToSampleAlignedOffset(seconds: number): number {
+    let ptr = Math.floor(seconds * SAMPLE_RATE * BYTES_PER_SAMPLE)
+    if (ptr % BYTES_PER_SAMPLE !== 0) {
+        ptr -= ptr % BYTES_PER_SAMPLE
+    }
+    return ptr
+}
+
+export function offsetToSeconds(offset: number): number {
+    return offset / BYTES_PER_SAMPLE / SAMPLE_RATE
+}
+
 export function timeToOffset(buffer: PCMBuffer, timeOffset: number): number {
     // get current time, modulo to length of buffer
     const now = new Date()

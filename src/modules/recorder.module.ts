@@ -3,10 +3,11 @@ import { Client, Message, MessageReaction, User, Channel,
     TextChannel, VoiceChannel, VoiceConnection, Speaking } from "discord.js"
 import S3 from "aws-sdk/clients/s3"
 import { createPCMBuffer, createPCMBufferWriter, 
-    addToBuffer, prepareBuffer, timeToOffset, clearBuffer } from "../utils/audiobuffer"
+    addToBuffer, prepareBuffer, timeToOffset, clearBuffer,
+    secondsToSampleAlignedOffset, offsetToSeconds } from "../utils/audiobuffer"
 import { PCMBuffer, PCMBufferWriter } from "../types/audiobuffer"
 import { Clip, createClip, getClipByName, deleteClipByName, renameClip,
-    getAllClips } from "../types/models/clip"
+    getAllClips, trimClip } from "../types/models/clip"
 import { Readable } from "stream"
 import * as fs from "fs"
 
@@ -204,7 +205,8 @@ async function handleSaveClip(channel: VoiceChannel, clipNameArg: string | undef
         url: data.Location,
         clipstart: 0,
         clipend: buffer.length,
-        participants: channel.members.map(member => member.id)
+        participants: channel.members.map(member => member.id),
+        duration: buffer.length
     }
 
     try {
@@ -308,6 +310,48 @@ async function handleDeleteClip(clipName: string, requester: string, textChannel
     }
 }
 
+async function handleTrimClip(clipName: string, start: number, end: number, textChannel: TextChannel) {
+    let clip
+    try {
+        clip = await getClipByName(clipName)
+    } catch (err) {
+        return await textChannel.send("Could not find a clip with that name.")
+    }
+
+    const duration = offsetToSeconds(clip.duration)
+
+    // if end was not passed in (NaN), assume end === duration
+    if (!end) {
+        end = duration
+    }
+
+    // convert negative numbers to (duration - n)
+    if (start < 0) {
+        start = duration + start
+    }
+
+    if (end < 0) {
+        end = duration + end
+    }
+
+    // reject if start > duration
+    if (start > duration) {
+        return await textChannel.send(`Start time is after the end of the clip (${duration.toFixed(1)})`)
+    }
+
+
+    if (start >= end) {
+        return await textChannel.send("Start time must be before end time.")
+    }
+
+    const startByte = Math.max(0, secondsToSampleAlignedOffset(start))
+    const endByte = Math.min(clip.duration, secondsToSampleAlignedOffset(end))
+
+
+    await trimClip(clipName, startByte, endByte)
+    await textChannel.send(`Trimmed clip ${clipName}.`)
+}
+
 async function handleMessage(message: Message) {
     if (!message.channel || !message.member) {
         return
@@ -360,7 +404,7 @@ async function handleMessage(message: Message) {
 
             // !clip trim <name> <start> <end>
             case "trim":
-                // TODO
+                await handleTrimClip(args[2], parseFloat(args[3]), parseFloat(args[4]), message.channel)
                 break
 
             // by default, assume they meant to type !clipit
