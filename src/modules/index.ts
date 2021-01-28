@@ -17,7 +17,7 @@ export function makeModulePath(moduleName: string): string {
 
 export function loadEnabledModules(): BotModule[] {
     return [
-        /*BaseModule,
+        BaseModule,
         PingModule,
         VibeCheckModule,
         MoneyModule,
@@ -25,7 +25,6 @@ export function loadEnabledModules(): BotModule[] {
         ReminderModule,
         MathModule,
         RecorderModule,
-        */
         LuisModule
     ]
 }
