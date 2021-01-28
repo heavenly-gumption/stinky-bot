@@ -5,6 +5,7 @@ declare let process: {
 }
 dotenv.config()
 
+
 import { Client } from "discord.js"
 
 import { Environment } from "./types"
