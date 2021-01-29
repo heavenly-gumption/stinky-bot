@@ -1,6 +1,6 @@
 import { db }  from '../../utils/db'
 
-interface Chats {
+type Chats = {
     id: number,
     log: string
 }

@@ -12,7 +12,9 @@ function getDbString(): string {
 const dbUrl: string = getDbString()
 
 // Skip SSL verification if the environment is dev
-const ssl = (process.env.NODE_ENV === "development") ? {rejectUnauthorized: false} : {rejectUnauthorized: true}
+const ssl = {
+    rejectUnauthorized: process.env.NODE_ENV !== "development"
+}
 
 const pgp = pgPromise({})
 const db = pgp({
