@@ -41,7 +41,7 @@ export function deleteClipByName(name: string): Promise<null> {
 
 export function createClip(clip: Clip): Promise<null> {
     return db.none('INSERT INTO Clips (id, time, name, url, clipstart, clipend, participants, duration)' +
-        'VALUES ($1, $2, $3, $4, $5, $6, $7)', 
+        'VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', 
         [clip.id, clip.time, clip.name, 
         clip.url, clip.clipstart, clip.clipend, clip.participants, clip.duration])
 }
