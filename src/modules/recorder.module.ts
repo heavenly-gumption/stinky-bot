@@ -334,11 +334,14 @@ async function handleTrimClip(clipName: string, start: number, end: number, text
         end = duration + end
     }
 
-    // reject if start > duration
+    // reject if start > duration or start < 0
+    if (start < 0) {
+        return await textChannel.send("Start time is before the beginning of the clip")
+    }
+
     if (start > duration) {
         return await textChannel.send(`Start time is after the end of the clip (${duration.toFixed(1)})`)
     }
-
 
     if (start >= end) {
         return await textChannel.send("Start time must be before end time.")
