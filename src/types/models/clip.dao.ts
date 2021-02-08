@@ -13,8 +13,8 @@ export type ClipDao = {
     getClip: (id: string) => Promise<Clip>,
     getClipByName: (name: string) => Promise<Clip>,
     getAllClips: () => Promise<Array<Clip>>,
-    deleteClipByName: (name: string) => Promise<null>,
-    createClip: (clip: Clip) => Promise<null>,
-    renameClip: (oldName: string, newName: string) => Promise<null>,
-    trimClip: (name: string, start: number, end: number) => Promise<null>
+    deleteClipByName: (name: string) => Promise<null | void>,
+    createClip: (clip: Clip) => Promise<null | void>,
+    renameClip: (oldName: string, newName: string) => Promise<null | void>,
+    trimClip: (name: string, start: number, end: number) => Promise<null | void>
 }

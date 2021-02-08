@@ -1,21 +1,20 @@
-import { getFirestoreConnection, find, set, remove, update } from "../../../utils/db/firestore"
+import { getFirestoreConnection, find } from "../../../utils/db/firestore"
 import { Reminder, ReminderDao } from '../reminder.dao'
 
-const db = getFirestoreConnection()
-const reminderRef = db.collection('reminders')
-
 function getDueReminders(): Promise<Array<Reminder>> {
+    const reminderRef = getFirestoreConnection().collection('reminders')
     const now = new Date();
     return find(reminderRef, 'time', '<', now.getTime())
 }
 
-function createReminder(
+async function createReminder(
     id: string, 
     time: Date, 
     content: string, 
     user: string, 
-    channel: string): Promise<null>
+    channel: string): Promise<void>
 {
+    const reminderRef = getFirestoreConnection().collection('reminders')
     const reminder: Reminder = { 
         id, 
         time: time.getTime(), 
@@ -23,16 +22,18 @@ function createReminder(
         interested: [user], 
         channel
     }
-    return set(reminderRef, id, reminder)
+    await reminderRef.doc(id).set(reminder)
 }
 
-function removeReminder(id: string): Promise<null> {
-    return remove(reminderRef, id)
+async function removeReminder(id: string): Promise<void> {
+    const reminderRef = getFirestoreConnection().collection('reminders')
+    await reminderRef.doc(id).delete()
 }
 
-function addInterestedToReminder(id: string, user: string): Promise<null> {
+async function addInterestedToReminder(id: string, user: string): Promise<void> {
+    const reminderRef = getFirestoreConnection().collection('reminders')
     // Adds the user to the reminder's interested list without creating duplicates.
-    return update(reminderRef, id, {
+    await reminderRef.doc(id).update({
         interested: FirebaseFirestore.FieldValue.arrayUnion(user)
     })
 }

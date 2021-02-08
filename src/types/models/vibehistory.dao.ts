@@ -6,5 +6,5 @@ export type VibeHistory = {
 
 export type VibeHistoryDao = {
     getLastNVibes: (id: string, n: number) => Promise<VibeHistory[]>,
-    addVibe: (id: string, vibe: number) => Promise<null>
+    addVibe: (id: string, vibe: number) => Promise<null | void>
 }

@@ -18,10 +18,8 @@ async function printBalance(message: Message) {
             await message.channel.send(author.username + " has **" + balance.amount + "** :gem: ")
         }
     } catch (error) {
-        if (error instanceof pgPromise.errors.QueryResultError) {
-            await moneyBalanceDao.initUser(author.id)
-            await printBalance(message)
-        }
+        await moneyBalanceDao.initUser(author.id)
+        await printBalance(message)
     }
 }
 

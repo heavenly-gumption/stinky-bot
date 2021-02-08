@@ -9,7 +9,7 @@ export type Reminder = {
 export type ReminderDao = {
     getDueReminders: () => Promise<Array<Reminder>>
     createReminder: (id: string, time: Date, content: string, 
-        user: string, channel: string) => Promise<null>,
-    removeReminder: (id: string) => Promise<null>,
-    addInterestedToReminder: (id: string, user: string) => Promise<null>
+        user: string, channel: string) => Promise<null | void>,
+    removeReminder: (id: string) => Promise<null | void>,
+    addInterestedToReminder: (id: string, user: string) => Promise<null | void>
 } 

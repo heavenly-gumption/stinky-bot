@@ -5,5 +5,5 @@ export type MoneyBalance = {
 
 export type MoneyBalanceDao = {
     getBalance: (user: string) => Promise<MoneyBalance>,
-    initUser: (user: string) => Promise<null>
+    initUser: (user: string) => Promise<null | void>
 }
