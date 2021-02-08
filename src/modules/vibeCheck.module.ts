@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
 import { Client, Message, ClientUser } from "discord.js"
-import { getLastNVibes, addVibe } from "../types/models/vibehistory"
+import { getVibeHistoryDao } from "../utils/model"
 
 const VIBE_CHECK_MAX = 20
 const LAST_N_VIBES_MAX = 50
@@ -10,6 +10,8 @@ const LOCKOUT_MINUTES = 60
 const LOCKOUT_MILLIS = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * LOCKOUT_MINUTES
 const HUNDRED = 100
 const PCT_PRECISION = 5
+
+const vibeHistoryDao = getVibeHistoryDao()
 
 // Returns the number of sequences of n k-sided dice that sum to s
 const memoizedCache = new Map<string, number>()
@@ -40,7 +42,7 @@ function ways(k: number, n: number, s: number): number {
 
 async function doVibeCheck(message: Message) {
     const vibeCheck = Math.floor(Math.random() * VIBE_CHECK_MAX + 1)
-    await addVibe(message.author!.id, vibeCheck)
+    await vibeHistoryDao.addVibe(message.author!.id, vibeCheck)
     await message.channel!.send("Current Vibe: `" + vibeCheck + "`")
 }
 
@@ -50,7 +52,7 @@ async function handleVibeCheckMessage(message: Message) {
     }
 
     // check lockout
-    const lastVibeResponse = await getLastNVibes(message.author.id, 1)
+    const lastVibeResponse = await vibeHistoryDao.getLastNVibes(message.author.id, 1)
     if (!lastVibeResponse || lastVibeResponse.length === 0) {
         doVibeCheck(message)
     } else {
@@ -83,7 +85,8 @@ async function handleLastNVibesMessage(message: Message) {
         return
     }
 
-    const lastNVibesResponse = await getLastNVibes(message.author.id, parseInt(match[0]))
+    const lastNVibesResponse = await vibeHistoryDao.getLastNVibes(
+        message.author.id, parseInt(match[0]))
 
     if (!lastNVibesResponse || lastNVibesResponse.length === 0) {
         await message.channel.send("You have no previous vibes.")

@@ -6,8 +6,8 @@ import { createPCMBuffer, createPCMBufferWriter,
     addToBuffer, prepareBuffer, timeToOffset, clearBuffer,
     secondsToSampleAlignedOffset, offsetToSeconds } from "../utils/audiobuffer"
 import { PCMBuffer, PCMBufferWriter } from "../types/audiobuffer"
-import { Clip, createClip, getClipByName, deleteClipByName, renameClip,
-    getAllClips, trimClip } from "../types/models/clip"
+import { Clip } from "../types/models/clip.dao"
+import { getClipDao } from "../utils/model"
 import { Readable } from "stream"
 import * as fs from "fs"
 
@@ -33,6 +33,8 @@ const s3 = new S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET
 })
+
+const clipDao = getClipDao()
 
 type VoiceChannelData = {
     connection: VoiceConnection;
@@ -210,14 +212,14 @@ async function handleSaveClip(channel: VoiceChannel, clipNameArg: string | undef
     }
 
     try {
-        await createClip(clip)
+        await clipDao.createClip(clip)
         voiceChannelData.lastClipTime = now
         await textChannel.send(`Saved clip with name ${clipName}`)
     } catch (err) {
         // try inserting with name-timestamp
         clip.name = clip.name + "-" + Math.floor(now.getTime() / MILLIS)
         try {
-            await createClip(clip)
+            await clipDao.createClip(clip)
             voiceChannelData.lastClipTime = now
             await textChannel.send(`Saved clip with name ${clip.name}`)
         } catch (err) {
@@ -234,7 +236,7 @@ async function handlePlayClip(channel: VoiceChannel, clipName: string, textChann
 
     let clip
     try {
-        clip = await getClipByName(clipName)
+        clip = await clipDao.getClipByName(clipName)
     } catch (err) {
         return await textChannel.send("Could not find a clip with that name.")
     }
@@ -265,15 +267,15 @@ async function handlePlayClip(channel: VoiceChannel, clipName: string, textChann
 }
 
 async function handleListClips(textChannel: TextChannel) {
-    const clips = await getAllClips()
+    const clips = await clipDao.getAllClips()
     return await textChannel.send(clips.map(c => c.name).sort().join(", "))
 }
 
 async function handleRenameClip(oldName: string, newName: string, textChannel: TextChannel) {
     try {
-        const clip = await getClipByName(oldName)
+        const clip = await clipDao.getClipByName(oldName)
         try {
-            await renameClip(oldName, newName)
+            await clipDao.renameClip(oldName, newName)
             return await textChannel.send(`Successfully renamed clip ${oldName} to ${newName}.`)
         } catch (err) {
             return await textChannel.send("Clip with that name already exists.")
@@ -287,7 +289,7 @@ async function handleRenameClip(oldName: string, newName: string, textChannel: T
 async function handleDeleteClip(clipName: string, requester: string, textChannel: TextChannel) {
     let clip
     try {
-        clip = await getClipByName(clipName)
+        clip = await clipDao.getClipByName(clipName)
     } catch (err) {
         return await textChannel.send("Could not find a clip with that name.")
     }
@@ -303,7 +305,7 @@ async function handleDeleteClip(clipName: string, requester: string, textChannel
 
     try {
         await s3.deleteObject(params).promise()
-        await deleteClipByName(clipName)
+        await clipDao.deleteClipByName(clipName)
         await textChannel.send(`Deleted clip ${clipName}`)
     } catch (err) {
         console.log(err)
@@ -313,7 +315,7 @@ async function handleDeleteClip(clipName: string, requester: string, textChannel
 async function handleTrimClip(clipName: string, start: number, end: number, textChannel: TextChannel) {
     let clip
     try {
-        clip = await getClipByName(clipName)
+        clip = await clipDao.getClipByName(clipName)
     } catch (err) {
         return await textChannel.send("Could not find a clip with that name.")
     }
@@ -351,7 +353,7 @@ async function handleTrimClip(clipName: string, start: number, end: number, text
     const endByte = Math.min(clip.duration, secondsToSampleAlignedOffset(end))
 
 
-    await trimClip(clipName, startByte, endByte)
+    await clipDao.trimClip(clipName, startByte, endByte)
     await textChannel.send(`Trimmed clip ${clipName}.`)
 }
 
