@@ -18,7 +18,6 @@ import { VibeHistoryFirestoreDao } from "../types/models/firestore/vibehistory"
 
 const isPg = process.env.DATABASE_TYPE === "pg"
 
-// TODO: second option should be not pg
 export function getChatsDao() {
     return isPg ? ChatsPgDao : ChatsFirestoreDao
 }

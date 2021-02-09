@@ -10,7 +10,8 @@
     "postinstall": "npm run build-ts && npm run lint-ts && npm run move-scripts",
     "move-scripts": "cp -R src/scripts dist/scripts && mkdir -p dist/__temp && chmod +x dist/scripts/*",
     "build": "npm run clean-dist && npm run postinstall",
-    "start": "node dist/bot.js"
+    "start": "node dist/bot.js",
+    "migrate": "node dist/scripts/migrate.js"
   },
   "author": "Pablo Morales",
   "license": "MIT",

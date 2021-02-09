@@ -1,18 +1,13 @@
 import firebaseAdmin from "firebase-admin"
 
 function getCredentials(): firebaseAdmin.ServiceAccount {
-    const privateKeyBase64: string | undefined = process.env.FIREBASE_PRIVATE_KEY_BASE_64
-    if (!privateKeyBase64) {
-        throw "Env variable FIREBASE_PRIVATE_KEY_BASE_64 is not defined"
+    const privateKey: string | undefined = process.env.FIREBASE_PRIVATE_KEY
+    if (!privateKey) {
+        throw "Env variable FIREBASE_PRIVATE_KEY is not defined"
     }
-
-    const privateKey = Buffer.from(privateKeyBase64, "base64")
-        .toString("utf-8")
-        .replace(/\\n/g, "\n")
-
     return {
         projectId: process.env.FIREBASE_PROJECT_ID,
-        privateKey: privateKeyBase64.replace(/\\n/g, "\n"),
+        privateKey: privateKey.replace(/\\n/g, "\n"),
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     }
 }
