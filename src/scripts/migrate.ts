@@ -11,11 +11,11 @@ async function main() {
     const fs = getFirestoreConnection()
 
     // Chats
-    const chats = await pg.many("SELECT * FROM Chats")
-    chats.forEach(async chat => {
-        await fs.collection("chats").doc(chat.id.toString()).set(chat)
-    })
-    console.log("Migrated Chats.")
+    // const chats = await pg.many("SELECT * FROM Chats")
+    // chats.forEach(async chat => {
+    //     await fs.collection("chats").doc(chat.id.toString()).set(chat)
+    // })
+    // console.log("Migrated Chats.")
 
     // Clips
     const clips = await pg.many("SELECT * FROM Clips")

@@ -37,7 +37,6 @@ export function getFirestoreConnection(): FirebaseFirestore.Firestore {
 export async function getOne<T>(ref: FirebaseFirestore.CollectionReference, id: string): Promise<T> {
     const doc = await ref.doc(id).get()
     if (!doc.exists) {
-        console.log("asldkfj")
         throw `Item ${id} not found in collection ${ref.id}`
     } else {
         return doc.data() as T
@@ -59,15 +58,21 @@ export async function findOne<T>(
     }
 }
 
+type MappingFunction<T> = (data: any) => T
 // Find multiple documents by query. Resolve items.
 export async function find<T>(
     ref: FirebaseFirestore.CollectionReference, 
     fieldPath: string, 
     opStr: FirebaseFirestore.WhereFilterOp, 
-    value: any): Promise<Array<T>> 
+    value: any,
+    mappingFn: MappingFunction<T> | undefined = undefined): Promise<Array<T>> 
 {
     const snapshot = await ref.where(fieldPath, opStr, value).get()
-    return snapshot.docs.map(doc => doc.data() as T)
+    if (mappingFn) {
+        return snapshot.docs.map(doc => mappingFn(doc.data()))
+    } else {
+        return snapshot.docs.map(doc => doc.data() as T)
+    }
 }
 
 // Get all documents in a collection. Resolve the array.

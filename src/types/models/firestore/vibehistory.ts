@@ -7,7 +7,14 @@ function getLastNVibes(id: string, n: number): Promise<Array<VibeHistory>> {
     return new Promise(async (resolve, reject) => {
         const vibeRef = getFirestoreConnection().collection(COLLECTION_NAME)
         const snapshot = await vibeRef.where('id', '==', id).orderBy('time', 'desc').limit(n).get()
-        resolve(snapshot.docs.map(doc => doc.data() as VibeHistory))
+        resolve(snapshot.docs.map(doc => {
+            const data = doc.data()
+            return {
+                id: data.id,
+                time: data.time.toDate(),
+                vibe: data.vibe
+            }
+        }))
     })
 }
 
@@ -17,7 +24,7 @@ async function addVibe(id: string, vibe: number): Promise<void> {
     const vibeHistory: VibeHistory = {
         id,
         vibe,
-        time: now.getTime()
+        time: now
     }
     await vibeRef.doc(id + ':' + now.getTime()).set(vibeHistory)
 }
