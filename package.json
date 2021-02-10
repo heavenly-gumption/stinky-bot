@@ -10,7 +10,8 @@
     "postinstall": "npm run build-ts && npm run lint-ts && npm run move-scripts",
     "move-scripts": "cp -R src/scripts dist/scripts && mkdir -p dist/__temp && chmod +x dist/scripts/*",
     "build": "npm run clean-dist && npm run postinstall",
-    "start": "node dist/bot.js"
+    "start": "node dist/bot.js",
+    "migrate": "node dist/scripts/migrate.js"
   },
   "author": "Pablo Morales",
   "license": "MIT",
@@ -36,6 +37,7 @@
     "discord.js": "^12.x",
     "dotenv": "^8.2.0",
     "ffmpeg-static": "^4.2.7",
+    "firebase-admin": "^9.4.2",
     "markovchain": "^1.0.2",
     "mathjax-full": "^3.1.2",
     "pg-promise": "^10.5.6"

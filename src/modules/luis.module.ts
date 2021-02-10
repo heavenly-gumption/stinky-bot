@@ -1,5 +1,5 @@
 import { BotModule } from "../types"
-import { getLog } from "../types/models/chats"
+import { getChatsDao } from "../utils/model"
 
 import { User, Message, Client } from "discord.js"
 import pgPromise from "pg-promise"
@@ -9,10 +9,12 @@ import MarkovChain from "markovchain"
 const markov = new MarkovChain()
 let vocab: string[] = []
 
+const chatsDao = getChatsDao()
+
 async function initializeMarkov() {
     try {
         console.log("Downloading chat data")
-        const logs = await getLog(0) // TODO: support multiple chatbots than hardcoding this
+        const logs = await chatsDao.getLog(0) // TODO: support multiple chatbots than hardcoding this
         const lines = logs.log.replace(/\n/g, " ").split(" ")
         vocab = lines
         console.log("Initializing markov data")

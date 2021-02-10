@@ -1,13 +1,14 @@
 import { BotModule } from "../types"
 import { Client, Message, MessageReaction, PartialUser, User, Channel, 
     TextChannel, MessageEmbed } from "discord.js"
-import { Reminder, getDueReminders, createReminder, 
-    addInterestedToReminder, removeReminder } from "../types/models/reminder"
+import { Reminder } from "../types/models/reminder.dao"
+import { getReminderDao } from "../utils/model"
 
 import * as chrono from "chrono-node"
 import { CronJob } from "cron"
 
 const COMMAND_REGEX: RegExp = /!remindme (.+?) to (.+)/
+const reminderDao = getReminderDao()
 
 function createEmbed(author: string, date: Date, content: string): MessageEmbed {
     // Create time string like "9/6/2020, 11:46:39 AM PDT"
@@ -49,7 +50,8 @@ async function handleMessage(match: RegExpMatchArray, message: Message) {
         createEmbed(message.author.id, date, content))
     const reminderMessage: Message = Array.isArray(reminderMessages) ? 
         reminderMessages[0] : reminderMessages
-    await createReminder(reminderMessage.id, date, content, message.author.id, message.channel.id)
+    await reminderDao.createReminder(reminderMessage.id, date, content, 
+        message.author.id, message.channel.id)
 }
 
 export const ReminderModule: BotModule = (client: Client) => {
@@ -65,14 +67,14 @@ export const ReminderModule: BotModule = (client: Client) => {
 
     // When a user reacts to a message, add them to the list of users to ping. 
     client.on("messageReactionAdd", async (reaction: MessageReaction, user: User | PartialUser) => {
-        await addInterestedToReminder(reaction.message.id, user.id)
+        await reminderDao.addInterestedToReminder(reaction.message.id, user.id)
     })
 
     // Every minute, periodically query the Reminders table for any reminders that are due.
     // Send a message to the channel the reminder was created in, mentioning all of the users
     // that have reacted to the message, was well as the reminder creator. Then, delete the reminder.
     const job = new CronJob("0 * * * * *", async () => {
-        const reminders: Array<Reminder> = await getDueReminders()
+        const reminders: Array<Reminder> = await reminderDao.getDueReminders()
         reminders.forEach(async (reminder) => {
             const mentions: string = reminder.interested.map((s) => `<@${s}>`).join(", ")
             const message: string = mentions + "\n**Reminder:** " + reminder.content
@@ -80,7 +82,7 @@ export const ReminderModule: BotModule = (client: Client) => {
             if (channel !== undefined) {
                 await (channel as TextChannel).send(message)
             }
-            await removeReminder(reminder.id)
+            await reminderDao.removeReminder(reminder.id)
         })
     })
     job.start()
