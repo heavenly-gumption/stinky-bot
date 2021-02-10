@@ -1,6 +1,6 @@
 export type Reminder = {
     id: string,
-    time: number,
+    time: Date,
     content: string,
     interested: string[]
     channel: string

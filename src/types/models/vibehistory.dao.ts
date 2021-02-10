@@ -1,6 +1,6 @@
 export type VibeHistory = {
     id: string,
-    time: number,
+    time: Date,
     vibe: number
 }
 

@@ -57,7 +57,7 @@ async function handleVibeCheckMessage(message: Message) {
         doVibeCheck(message)
     } else {
         const lastVibe = lastVibeResponse[0]
-        const timeDiff = Date.now() - lastVibe.time
+        const timeDiff = Date.now() - lastVibe.time.getTime()
         if (timeDiff > LOCKOUT_MILLIS) {
             doVibeCheck(message)
         } else {

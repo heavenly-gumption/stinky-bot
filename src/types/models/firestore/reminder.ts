@@ -6,7 +6,15 @@ const COLLECTION_NAME = 'reminders'
 function getDueReminders(): Promise<Array<Reminder>> {
     const reminderRef = getFirestoreConnection().collection(COLLECTION_NAME)
     const now = new Date();
-    return find(reminderRef, 'time', '<', now.getTime())
+    return find(reminderRef, 'time', '<', now.getTime(), (data) => {
+        return {
+            id: data.id,
+            time: data.time.toDate(),
+            content: data.content,
+            interested: data.interested,
+            channel: data.channel
+        }
+    })
 }
 
 async function createReminder(
@@ -19,7 +27,7 @@ async function createReminder(
     const reminderRef = getFirestoreConnection().collection(COLLECTION_NAME)
     const reminder: Reminder = { 
         id, 
-        time: time.getTime(), 
+        time, 
         content, 
         interested: [user], 
         channel
