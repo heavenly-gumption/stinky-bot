@@ -11,7 +11,7 @@ import { getClipDao } from "../utils/model"
 import { Readable } from "stream"
 import * as fs from "fs"
 
-const BUCKET = "heavenly-gumption-clips"
+const BUCKET = process.env.AWS_S3_BUCKET
 const FILE_EXT = "pcm"
 
 const CLIP_ID_CHARS = "0123456789abcdef"
@@ -59,7 +59,7 @@ function randomClipId() {
 async function getClipFromS3(clip: Clip): Promise<Buffer> {
     const params = {
         Bucket: BUCKET,
-        Key: `${clip.id}.pcm`,
+        Key: `$clips/{clip.id}.pcm`,
         Range: `bytes=${clip.clipstart}-${clip.clipend}`
     }
 
