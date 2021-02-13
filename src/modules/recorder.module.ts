@@ -59,7 +59,7 @@ function randomClipId() {
 async function getClipFromS3(clip: Clip): Promise<Buffer> {
     const params = {
         Bucket: BUCKET,
-        Key: "$clips/{clip.id}.pcm",
+        Key: "clips/${clip.id}.pcm",
         Range: `bytes=${clip.clipstart}-${clip.clipend}`
     }
 
@@ -74,7 +74,7 @@ async function getClipFromS3(clip: Clip): Promise<Buffer> {
 async function uploadClipToS3(clipId: string, buffer: Buffer): Promise<Record<string, any>> {
     const params = {
         Bucket: BUCKET,
-        Key: `${clipId}.${FILE_EXT}`,
+        Key: `clips/${clipId}.${FILE_EXT}`,
         Body: buffer
     }
 
