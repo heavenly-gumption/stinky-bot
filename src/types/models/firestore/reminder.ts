@@ -1,3 +1,4 @@
+import firebaseAdmin from "firebase-admin"
 import { getFirestoreConnection, find } from "../../../utils/db/firestore"
 import { Reminder, ReminderDao } from '../reminder.dao'
 
@@ -6,7 +7,7 @@ const COLLECTION_NAME = 'reminders'
 function getDueReminders(): Promise<Array<Reminder>> {
     const reminderRef = getFirestoreConnection().collection(COLLECTION_NAME)
     const now = new Date();
-    return find(reminderRef, 'time', '<', now.getTime(), (data) => {
+    return find(reminderRef, 'time', '<', now, (data) => {
         return {
             id: data.id,
             time: data.time.toDate(),
@@ -44,7 +45,7 @@ async function addInterestedToReminder(id: string, user: string): Promise<void> 
     const reminderRef = getFirestoreConnection().collection(COLLECTION_NAME)
     // Adds the user to the reminder's interested list without creating duplicates.
     await reminderRef.doc(id).update({
-        interested: FirebaseFirestore.FieldValue.arrayUnion(user)
+        interested: firebaseAdmin.firestore.FieldValue.arrayUnion(user)
     })
 }
 
