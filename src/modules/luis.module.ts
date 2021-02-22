@@ -1,25 +1,43 @@
 import { BotModule } from "../types"
-import { getChatsDao } from "../utils/model"
 
-import { User, Message, Client } from "discord.js"
-import pgPromise from "pg-promise"
-import { ParsingResult } from "chrono-node/dist/results"
+import { Client } from "discord.js"
+import S3 from "aws-sdk/clients/s3"
 
 import MarkovChain from "markovchain"
 const markov = new MarkovChain()
 let vocab: string[] = []
+const BUCKET: string = process.env.AWS_S3_BUCKET ?? "heavenly-gumption"
 
-const chatsDao = getChatsDao()
+
+const s3 = new S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET
+})
+
+
+async function getChatLogFromS3(user: string): Promise<string> {
+    const params = {
+        Bucket: BUCKET,
+        Key: `markov/${user}.txt`
+    }
+
+    const data = await s3.getObject(params).promise()
+    if (data.Body instanceof Buffer) {
+        return data.Body.toString()
+    } else {
+        throw data.Body
+    }
+}
 
 async function initializeMarkov() {
     try {
-        console.log("Downloading chat data")
-        const logs = await chatsDao.getLog(0) // TODO: support multiple chatbots than hardcoding this
-        const lines = logs.log.replace(/\n/g, " ").split(" ")
+        console.log("Downloading Chat Data!")
+        const logs = await getChatLogFromS3("luis")
+        const lines = logs.replace(/\n/g, " ").split(" ")
         vocab = lines
-        console.log("Initializing markov data")
-        markov.parse(logs.log)
-        console.log("loaded markov data")
+        console.log("Initializing Markov Chain")
+        markov.parse(logs)
+        console.log("Initialized Markov Chain")
         console.log("Loaded Luis Module")
     } catch (error) {
         console.error(error)
