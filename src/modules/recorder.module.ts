@@ -119,6 +119,9 @@ async function joinChannel(channel: VoiceChannel) {
         return
     }
 
+    // Delay joining by a few hundred millis to not overlap the "join channel noise"
+    await new Promise(resolve => setTimeout(resolve, 250))
+
     const connection: VoiceConnection = await channel.join()
     const buffer: PCMBuffer = createPCMBuffer(BUFFER_LEN_SEC)
 
