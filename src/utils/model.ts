@@ -12,6 +12,7 @@ import { ClipFirestoreDao } from "../types/models/firestore/clip"
 import { MoneyBalanceFirestoreDao } from "../types/models/firestore/moneybalance"
 import { ReminderFirestoreDao } from "../types/models/firestore/reminder"
 import { VibeHistoryFirestoreDao } from "../types/models/firestore/vibehistory"
+import { SharesFirestoreDao } from "../types/models/firestore/shares"
 
 const isPg = process.env.DATABASE_TYPE === "pg"
 
@@ -29,4 +30,11 @@ export function getReminderDao() {
 
 export function getVibeHistoryDao() {
     return isPg ? VibeHistoryPgDao : VibeHistoryFirestoreDao
+}
+
+export function getSharesDao() {
+    if (isPg) {
+        throw "Shares are not supported for Postgres"
+    }
+    return SharesFirestoreDao
 }
