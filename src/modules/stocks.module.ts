@@ -219,7 +219,7 @@ async function handleMessage(message: Message) {
         return
     }
 
-    if (!message.content.startsWith("!stonks")) {
+    if (!message.content.startsWith("!stocks")) {
         return
     }
 
