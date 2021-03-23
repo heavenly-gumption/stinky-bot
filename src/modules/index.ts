@@ -10,6 +10,7 @@ import { ReminderModule } from "./reminder.module"
 import { MathModule } from "./math.module"
 import { RecorderModule } from "./recorder.module"
 import { LuisModule } from "./luis.module"
+import { StocksModule } from "./stocks.module"
 
 export function makeModulePath(moduleName: string): string {
     return `${moduleName}.module.js`
@@ -25,7 +26,8 @@ export function loadEnabledModules(): BotModule[] {
         ReminderModule,
         MathModule,
         RecorderModule,
-        LuisModule
+        LuisModule,
+        StocksModule
     ]
 }
 
