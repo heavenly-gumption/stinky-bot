@@ -118,11 +118,11 @@ async function handlePortfolio(user: string, channel: TextChannel) {
     const portfolio: Array<Shares> = await sharesDao.getSharesByUser(user)
     const rows: Array<Array<string>> = portfolio
         .filter((shares: Shares) => shares.amount > 0)
-        .map((shares: Shares) => [ shares.symbol, shares.amount.toString() ])
+        .map((shares: Shares) => [ shares.symbol, shares.amount.toString(), shares.averagePrice.toFixed(2) ])
     if (rows.length === 0) {
         return channel.send("You do not own any stocks.") 
     }
-    const table = generateTable([["Symbol", "Owned shares"]].concat(rows), true)
+    const table = generateTable([["Symbol", "Owned shares", "Average price"]].concat(rows), true)
     return channel.send("Your portfolio:\n" + table)
 }
 
