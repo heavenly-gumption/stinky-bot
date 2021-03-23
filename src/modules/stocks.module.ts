@@ -19,6 +19,13 @@ type FinnhubQuote = {
     pc: number;
 }
 
+function getTransactionString(verb: string, amount: number, symbol: string, currentPrice: number, 
+        startBalance: number, endBalance: number, startShares: number, endShares: number) {
+    return `Successfully ${verb} ${amount} shares of \`${symbol}\` at ${currentPrice.toFixed(2)}.\n`
+            + `:gem: Money: ${startBalance.toFixed(2)} -> **${endBalance.toFixed(2)}**\n`
+            + `Owned shares of \`${symbol}\`: ${startShares} -> **${endShares}**`
+}
+
 async function handleBuyStocks(user: string, symbol: string, amount: number, channel: TextChannel) {
     const token = process.env.FINNHUB_API_KEY
 
@@ -45,9 +52,8 @@ async function handleBuyStocks(user: string, symbol: string, amount: number, cha
 
     try {
         const result = await sharesDao.buyShares(user, symbol, amount, currentPrice)
-        return channel.send(`Successfully bought ${amount} shares of \`${symbol}\` at ${currentPrice.toFixed(2)}.\n`
-            + `:gem: Money: ${result.startBalance.toFixed(2)} -> **${result.endBalance.toFixed(2)}**\n`
-            + `Owned shares of \`${symbol}\`: ${result.startShares} -> **${result.endShares}**`)
+        return channel.send(getTransactionString('bought', amount, symbol, currentPrice,
+            result.startBalance, result.endBalance, result.startShares, result.endShares))
     } catch (err) {
         if (err.type === BALANCE_UNINITIALIZED_ERROR) {
             return channel.send("Your :gem: money balance isn't initialized yet. Try again after running !money for the first time.")
@@ -85,9 +91,8 @@ async function handleSellStocks(user: string, symbol: string, amount: number, ch
 
     try {
         const result = await sharesDao.sellShares(user, symbol, amount, currentPrice)
-        return channel.send(`Successfully sold ${amount} shares of \`${symbol}\` at ${currentPrice.toFixed(2)}.\n`
-            + `:gem: Money: ${result.startBalance.toFixed(2)} -> **${result.endBalance.toFixed(2)}**\n`
-            + `Owned shares of \`${symbol}\`: ${result.startShares} -> **${result.endShares}**`)
+        return channel.send(getTransactionString('sold', amount, symbol, currentPrice,
+            result.startBalance, result.endBalance, result.startShares, result.endShares))
     } catch (err) {
         if (err.type === BALANCE_UNINITIALIZED_ERROR) {
             return channel.send("Your :gem: Money balance isn't initialized yet. Try again after running !money for the first time.")
