@@ -8,15 +8,58 @@ import { generateTable } from "../utils/table"
 
 import axios from "axios"
 
-const sharesDao = getSharesDao()
-const FINNHUB_API_URL = "https://finnhub.io/api/v1/quote"
-
 type FinnhubQuote = {
     o: number;
     h: number;
     l: number;
     c: number;
     pc: number;
+}
+
+type PriceCacheItem = {
+    time: Date;
+    price: number;
+}
+
+const FINNHUB_API_URL = "https://finnhub.io/api/v1/quote"
+const CACHE_TTL = 60 * 60 * 1000
+
+const sharesDao = getSharesDao()
+const priceCache: Map<string, PriceCacheItem> = new Map()
+
+
+async function getStockPrice(symbol: string): Promise<number> {
+    const token = process.env.FINNHUB_API_KEY
+    const response = await axios.get(`${FINNHUB_API_URL}?symbol=${symbol}&token=${token}`)
+    const data = response.data as FinnhubQuote
+    // update the cache here
+    const now = new Date()
+    priceCache.set(symbol, { time: now, price: data.c })
+    return data.c
+}
+
+// Retrieves stock prices first from the local cache, then API call if needed.
+async function getCachedStockPrice(symbol: string): Promise<number> {
+    const now = new Date()
+    if (priceCache.has(symbol)) {
+        const cacheItem = priceCache.get(symbol)!
+        if (now.getTime() - cacheItem.time.getTime() < CACHE_TTL) {
+            return cacheItem.price
+        }
+    }
+    const price = await getStockPrice(symbol)
+    priceCache.set(symbol, { time: now, price: price })
+    return price
+}
+
+// Retrieves stock prices first from the local cache, then API call if needed.
+async function getCachedStockPrices(symbols: Array<string>): Promise<Map<string, number>> {
+    const prices = await Promise.all(symbols.map(symbol => getCachedStockPrice(symbol)))
+    const stockPrices = new Map<string, number>()
+    prices.forEach((price, i) => {
+        stockPrices.set(symbols[i], price)
+    })
+    return stockPrices
 }
 
 function getTransactionString(verb: string, amount: number, symbol: string, currentPrice: number, txn: Transaction) {
@@ -51,9 +94,7 @@ async function handleBuyStocks(user: string, symbol: string, amount: number, cha
 
     let currentPrice: number
     try {
-        const response = await axios.get(`${FINNHUB_API_URL}?symbol=${symbol}&token=${token}`)
-        const data = response.data as FinnhubQuote
-        currentPrice = data.c
+        currentPrice = await getStockPrice(symbol)
     } catch (err) {
         return channel.send("Unable to reach Finnhub API at the moment.")
     }
@@ -89,9 +130,7 @@ async function handleSellStocks(user: string, symbol: string, amount: number, ch
 
     let currentPrice: number
     try {
-        const response = await axios.get(`${FINNHUB_API_URL}?symbol=${symbol}&token=${token}`)
-        const data = response.data as FinnhubQuote
-        currentPrice = data.c
+        currentPrice = await getStockPrice(symbol)
     } catch (err) {
         return channel.send("Unable to reach Finnhub API at the moment.")
     }
@@ -116,14 +155,59 @@ async function handleSellStocks(user: string, symbol: string, amount: number, ch
 
 async function handlePortfolio(user: string, channel: TextChannel) {
     const portfolio: Array<Shares> = await sharesDao.getSharesByUser(user)
-    const rows: Array<Array<string>> = portfolio
-        .filter((shares: Shares) => shares.amount > 0)
-        .map((shares: Shares) => [ shares.symbol, shares.amount.toString(), shares.averagePrice.toFixed(2) ])
-    if (rows.length === 0) {
+    const nonZeroShares = portfolio.filter((shares: Shares) => shares.amount > 0)
+    if (nonZeroShares.length === 0) {
         return channel.send("You do not own any stocks.") 
     }
-    const table = generateTable([["Symbol", "Owned shares", "Average price"]].concat(rows), true)
+
+    const rows = nonZeroShares.map((shares: Shares) => {
+        return [ shares.symbol, shares.amount.toString(), shares.averagePrice.toFixed(2) ]
+    })
+    const headerRow = ["Symbol", "Owned shares", "Average price"]
+
+    const table = generateTable([headerRow].concat(rows), true)
     return channel.send("Your portfolio:\n" + table)
+}
+
+async function handlePortfolioValue(user: string, channel: TextChannel) {
+    const portfolio: Array<Shares> = await sharesDao.getSharesByUser(user)
+    const nonZeroShares = portfolio.filter((shares: Shares) => shares.amount > 0)
+    if (nonZeroShares.length === 0) {
+        return channel.send("You do not own any stocks.") 
+    }
+    const symbols = nonZeroShares.map(shares => shares.symbol)
+
+    let stockPrices: Map<string, number>
+    try {
+        stockPrices = await getCachedStockPrices(symbols)
+    } catch (err) {
+        return channel.send("Unable to reach Finnhub API at the moment.") 
+    }
+    
+    const rows = nonZeroShares.map((shares: Shares) => {
+        const price = stockPrices.get(shares.symbol)!
+        return [
+            shares.symbol,
+            shares.amount.toString(),
+            shares.averagePrice.toFixed(2),
+            price.toFixed(2),
+            (shares.amount * price).toFixed(2)
+        ]
+    })
+    const totalValue = nonZeroShares.map((shares: Shares) => {
+        return shares.amount * stockPrices.get(shares.symbol)!
+    }).reduce((a, b) => a + b, 0)
+
+    const headerRow = [
+        "Symbol",
+        "Owned shares",
+        "Average price",
+        "Current price",
+        "Market value"
+    ]
+    const fullTable = [headerRow].concat(rows)
+    const tableStr = generateTable(fullTable, true)
+    return channel.send("Your portfolio:\n" + tableStr + `\nYour total portfolio value: **${totalValue.toFixed(2)}**`)
 }
 
 async function handleMessage(message: Message) {
@@ -153,7 +237,11 @@ async function handleMessage(message: Message) {
             }
             return await handleSellStocks(message.author.id, args[2].toUpperCase(), parseInt(args[3]), message.channel)
         case "portfolio":
-            return await handlePortfolio(message.author.id, message.channel)
+            if (args[2] === "value") {
+                return await handlePortfolioValue(message.author.id, message.channel)
+            } else {
+                return await handlePortfolio(message.author.id, message.channel)
+            }
         default:
             return await message.channel.send("Available commands: \`buy, sell, portfolio\`")
     }
