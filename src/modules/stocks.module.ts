@@ -22,6 +22,14 @@ type FinnhubQuote = {
 async function handleBuyStocks(user: string, symbol: string, amount: number, channel: TextChannel) {
     const token = process.env.FINNHUB_API_KEY
     
+    if (amount === NaN) {
+        return channel.send("Please enter a valid number.")
+    }
+
+    if (amount <= 0) {
+        return channel.send("Number of shares must be greater than zero.")
+    }
+
     let currentPrice: number
     try {
         const response = await axios.get(`${FINNHUB_API_URL}?symbol=${symbol}&token=${token}`)
@@ -54,6 +62,14 @@ async function handleBuyStocks(user: string, symbol: string, amount: number, cha
 async function handleSellStocks(user: string, symbol: string, amount: number, channel: TextChannel) {
     const token = process.env.FINNHUB_API_KEY
     
+    if (amount === NaN) {
+        return channel.send("Please enter a valid number.")
+    }
+
+    if (amount <= 0) {
+        return channel.send("Number of shares must be greater than zero.")
+    }
+
     let currentPrice: number
     try {
         const response = await axios.get(`${FINNHUB_API_URL}?symbol=${symbol}&token=${token}`)
