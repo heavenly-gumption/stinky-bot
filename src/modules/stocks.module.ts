@@ -146,12 +146,12 @@ async function handleMessage(message: Message) {
             if (args.length < 4) {
                 return message.channel.send("Usage: \`!stocks buy <symbol> <quantity>\`")
             }
-            return await handleBuyStocks(message.author.id, args[2], parseInt(args[3]), message.channel)
+            return await handleBuyStocks(message.author.id, args[2].toUpperCase(), parseInt(args[3]), message.channel)
         case "sell":
             if (args.length < 4) {
                 return message.channel.send("Usage: \`!stocks sell <symbol> <quantity>\`")
             }
-            return await handleSellStocks(message.author.id, args[2], parseInt(args[3]), message.channel)
+            return await handleSellStocks(message.author.id, args[2].toUpperCase(), parseInt(args[3]), message.channel)
         case "portfolio":
             return await handlePortfolio(message.author.id, message.channel)
         default:
