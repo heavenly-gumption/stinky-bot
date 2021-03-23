@@ -19,11 +19,23 @@ type FinnhubQuote = {
     pc: number;
 }
 
-function getTransactionString(verb: string, amount: number, symbol: string, currentPrice: number, 
-        startBalance: number, endBalance: number, startShares: number, endShares: number) {
-    return `Successfully ${verb} ${amount} shares of \`${symbol}\` at ${currentPrice.toFixed(2)}.\n`
-            + `:gem: Money: ${startBalance.toFixed(2)} -> **${endBalance.toFixed(2)}**\n`
-            + `Owned shares of \`${symbol}\`: ${startShares} -> **${endShares}**`
+function getTransactionString(verb: string, amount: number, symbol: string, currentPrice: number, txn: Transaction) {
+    let comment = ""
+    if (verb === "sold") {
+        const ratio = txn.price / txn.startAvg
+        if (ratio > 1) {
+            // One rocket emoji for every 25% above 100%
+            comment = ":rocket: ".repeat((ratio - 1) / 0.25)
+        } else if (ratio < 0.5) {
+            // GUH if below 50%, stonks down emoji for every 10% below that
+            comment = "**GUH** " + ":chart_with_downwards_trend: ".repeat((0.5 - ratio) / 0.1)
+        }
+    }
+
+    return `Successfully ${verb} ${amount} shares of \`${symbol}\` at ${currentPrice.toFixed(2)}. ${comment}\n\n`
+            + `:gem: Money: ${txn.startBalance.toFixed(2)} -> **${txn.endBalance.toFixed(2)}**\n`
+            + `Owned shares of \`${symbol}\`: ${txn.startShares} -> **${txn.endShares}**\n`
+            + `Your average share price: ${txn.startAvg.toFixed(2)} -> **${txn.endAvg.toFixed(2)}**\n`
 }
 
 async function handleBuyStocks(user: string, symbol: string, amount: number, channel: TextChannel) {
@@ -52,8 +64,7 @@ async function handleBuyStocks(user: string, symbol: string, amount: number, cha
 
     try {
         const result = await sharesDao.buyShares(user, symbol, amount, currentPrice)
-        return channel.send(getTransactionString('bought', amount, symbol, currentPrice,
-            result.startBalance, result.endBalance, result.startShares, result.endShares))
+        return channel.send(getTransactionString("bought", amount, symbol, currentPrice, result))
     } catch (err) {
         if (err.type === BALANCE_UNINITIALIZED_ERROR) {
             return channel.send("Your :gem: money balance isn't initialized yet. Try again after running !money for the first time.")
@@ -91,8 +102,7 @@ async function handleSellStocks(user: string, symbol: string, amount: number, ch
 
     try {
         const result = await sharesDao.sellShares(user, symbol, amount, currentPrice)
-        return channel.send(getTransactionString('sold', amount, symbol, currentPrice,
-            result.startBalance, result.endBalance, result.startShares, result.endShares))
+        return channel.send(getTransactionString("sold", amount, symbol, currentPrice, result))
     } catch (err) {
         if (err.type === BALANCE_UNINITIALIZED_ERROR) {
             return channel.send("Your :gem: Money balance isn't initialized yet. Try again after running !money for the first time.")

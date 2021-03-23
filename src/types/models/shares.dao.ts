@@ -1,7 +1,8 @@
 export type Shares = {
     user: string,
     symbol: string,
-    amount: number
+    amount: number,
+    averagePrice: number
 }
 
 export type Transaction = {
@@ -12,7 +13,9 @@ export type Transaction = {
     startBalance: number,
     endBalance: number,
     startShares: number,
-    endShares: number
+    endShares: number,
+    startAvg: number,
+    endAvg: number
 }
 
 export const SHARES_COLLECTION_NAME = 'shares'

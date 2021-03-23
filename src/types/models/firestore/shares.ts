@@ -50,19 +50,26 @@ async function buyShares(user: string, symbol: string, amount: number, price: nu
 
             const startBalance = money.amount
             const endBalance = startBalance - amount * price
-            let startShares, endShares
+            let startShares, endShares, startAvg, endAvg
 
             // Update the shares ownership for the user
             if (sharesDoc.exists) {
                 const shares: Shares = sharesDoc.data() as Shares
                 startShares = shares.amount
                 endShares = startShares + amount
+                startAvg = shares.averagePrice
+                endAvg = (startAvg * startShares + price * amount) / endShares
 
-                t.update(sharesDocRef, { amount: endShares })
+                t.update(sharesDocRef, {
+                    amount: endShares,
+                    averagePrice: endAvg
+                })
             } else {
                 startShares = 0
                 endShares = amount
-                t.set(sharesDocRef, { user: user, symbol: symbol, amount: amount })
+                startAvg = 0
+                endAvg = price
+                t.set(sharesDocRef, { user: user, symbol: symbol, amount: amount, averagePrice: price })
             }
 
             // Update the money balance for the user
@@ -77,7 +84,9 @@ async function buyShares(user: string, symbol: string, amount: number, price: nu
                 startBalance,
                 endBalance,
                 startShares,
-                endShares
+                endShares,
+                startAvg,
+                endAvg
             }
             t.set(transactionDocRef, sharesTransaction)
             return sharesTransaction
@@ -126,6 +135,8 @@ async function sellShares(user: string, symbol: string, amount: number, price: n
             const endBalance = startBalance + amount * price
             const startShares = shares.amount
             const endShares = startShares - amount
+            const startAvg = shares.averagePrice
+            const endAvg = shares.averagePrice
 
             // Update the shares ownership for the user
             t.update(sharesDocRef, { amount: endShares })
@@ -142,7 +153,9 @@ async function sellShares(user: string, symbol: string, amount: number, price: n
                 startBalance,
                 endBalance,
                 startShares,
-                endShares
+                endShares,
+                startAvg,
+                endAvg
             }
             t.set(transactionDocRef, sharesTransaction)
             return sharesTransaction
