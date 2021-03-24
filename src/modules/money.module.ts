@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
 import { getMoneyBalanceDao } from "../utils/model"
-import { User, Message, Client } from "discord.js"
+import { User, Message, Client, Channel } from "discord.js"
 import pgPromise from "pg-promise"
 
 const moneyBalanceDao = getMoneyBalanceDao()
@@ -19,6 +19,16 @@ async function printBalance(message: Message) {
         }
     } catch (error) {
         await moneyBalanceDao.initUser(author.id)
+        await printBalance(message)
+    }
+}
+
+async function handleMessage(message: Message) {
+    if (!message.content || !message.channel) {
+        return
+    }
+
+    if (message.content.startsWith("!money")) {
         await printBalance(message)
     }
 }

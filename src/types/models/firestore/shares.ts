@@ -12,6 +12,21 @@ function getTransactionDocId(user: string, symbol: string, time: Date): string {
     return user + '-' + symbol + '-' + time.getTime()
 }
 
+async function getAllShares(): Promise<Map<string, Shares[]>> {
+    const sharesRef = getFirestoreConnection().collection(SHARES_COLLECTION_NAME)
+    const snapshot = await sharesRef.get()
+    const res: Map<string, Shares[]> = new Map()
+    snapshot.forEach(doc => {
+        const shares = doc.data() as Shares
+        if (res.has(shares.user)) {
+            res.get(shares.user)!.push(shares)
+        } else {
+            res.set(shares.user, [shares])
+        }
+    })
+    return res
+}
+
 function getSharesByUser(user: string): Promise<Array<Shares>> {
     const sharesRef = getFirestoreConnection().collection(SHARES_COLLECTION_NAME)
     return find<Shares>(sharesRef, 'user', '==', user)
@@ -167,6 +182,7 @@ async function sellShares(user: string, symbol: string, amount: number, price: n
 }
 
 export const SharesFirestoreDao: SharesDao = {
+    getAllShares,
     getSharesByUser,
     getSharesByUserAndSymbol,
     buyShares,

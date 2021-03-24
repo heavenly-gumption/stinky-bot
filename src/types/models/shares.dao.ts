@@ -26,6 +26,7 @@ export const LOW_BALANCE_ERROR = 'LOW_BALANCE'
 export const NOT_ENOUGH_SHARES_ERROR = 'NOT_ENOUGH_SHARES'
 
 export type SharesDao = {
+    getAllShares: () => Promise<Map<string, Shares[]>>
     getSharesByUser: (user: string) => Promise<Shares[]>,
     getSharesByUserAndSymbol: (user: string, symbol: string) => Promise<Shares>,
     buyShares: (user: string, symbol: string, amount: number, price: number) => Promise<Transaction>,

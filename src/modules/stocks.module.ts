@@ -3,7 +3,7 @@ import { Client, Message, TextChannel } from "discord.js"
 
 import { Shares, Transaction,
     BALANCE_UNINITIALIZED_ERROR, LOW_BALANCE_ERROR, NOT_ENOUGH_SHARES_ERROR } from "../types/models/shares.dao"
-import { getSharesDao } from "../utils/model"
+import { getMoneyBalanceDao, getSharesDao } from "../utils/model"
 import { generateTable } from "../utils/table"
 
 import axios from "axios"
@@ -24,6 +24,7 @@ type PriceCacheItem = {
 const FINNHUB_API_URL = "https://finnhub.io/api/v1/quote"
 const CACHE_TTL = 60 * 60 * 1000
 
+const moneyBalanceDao = getMoneyBalanceDao()
 const sharesDao = getSharesDao()
 const priceCache: Map<string, PriceCacheItem> = new Map()
 
@@ -169,6 +170,12 @@ async function handlePortfolio(user: string, channel: TextChannel) {
     return channel.send("Your portfolio:\n" + table)
 }
 
+function getTotalPortfolioValue(sharesList: Shares[], stockPrices: Map<string, number>) {
+    return sharesList.map((shares: Shares) => {
+        return shares.amount * stockPrices.get(shares.symbol)!
+    }).reduce((a, b) => a + b, 0)
+}
+
 async function handlePortfolioValue(user: string, channel: TextChannel) {
     const portfolio: Array<Shares> = await sharesDao.getSharesByUser(user)
     const nonZeroShares = portfolio.filter((shares: Shares) => shares.amount > 0)
@@ -194,9 +201,7 @@ async function handlePortfolioValue(user: string, channel: TextChannel) {
             (shares.amount * price).toFixed(2)
         ]
     })
-    const totalValue = nonZeroShares.map((shares: Shares) => {
-        return shares.amount * stockPrices.get(shares.symbol)!
-    }).reduce((a, b) => a + b, 0)
+    const totalValue = getTotalPortfolioValue(nonZeroShares, stockPrices)
 
     const headerRow = [
         "Symbol",
@@ -210,6 +215,55 @@ async function handlePortfolioValue(user: string, channel: TextChannel) {
     return channel.send("Your portfolio:\n" + tableStr + `\nYour total portfolio value: **${totalValue.toFixed(2)}**`)
 }
 
+async function handleBaltop(channel: TextChannel) {
+    // Retrieve all user balances and shares
+    const [balances, shares] = await Promise.all([moneyBalanceDao.getAllBalances(), sharesDao.getAllShares()])
+
+    const balanceMap: Map<string, number> = new Map()
+    // Set total balance to current balance. We will add the portfolio value in a bit
+    for (const [user, balance] of balances.entries()) {
+        balanceMap.set(user, balance.amount)
+    }
+
+    // Calculate portfolio value for each user
+    const portfolioValueMap: Map<string, number> = new Map()
+    for (const [user, sharesList] of shares.entries()) {
+        const nonZeroShares = sharesList.filter((shares: Shares) => shares.amount > 0)
+        const symbols = nonZeroShares.map(shares => shares.symbol)
+
+        let stockPrices: Map<string, number>
+        try {
+            stockPrices = await getCachedStockPrices(symbols)
+        } catch (err) {
+            return channel.send("Unable to reach Finnhub API at the moment.") 
+        }
+        const totalValue = getTotalPortfolioValue(nonZeroShares, stockPrices)
+
+        portfolioValueMap.set(user, totalValue)
+    }
+
+    // Output baltop
+    const userData = []
+    for (const [user, balance] of balanceMap.entries()) {
+        const portfolioValue = portfolioValueMap.has(user) ? portfolioValueMap.get(user)! : 0
+        userData.push({
+            user,
+            balance,
+            portfolioValue,
+            total: portfolioValue + balance
+        })
+    }
+    // Sort descending
+    userData.sort((a, b) => b.total - a.total)
+
+    const header = ["Username", "Money", "Portfolio value", "Total"]
+    const rows = await Promise.all(userData.map(async datum => {
+        const discordUser = await channel.client.users.fetch(datum.user)
+        return [discordUser.username, datum.balance.toFixed(2), datum.portfolioValue.toFixed(2), datum.total.toFixed(2)]
+    }))
+    return channel.send(generateTable([header].concat(rows), true))
+}
+
 async function handleMessage(message: Message) {
     if (!message.channel || !message.member) {
         return
@@ -217,6 +271,10 @@ async function handleMessage(message: Message) {
 
     if (!(message.channel instanceof TextChannel)) {
         return
+    }
+
+    if (message.content.startsWith("!baltop")) {
+        await handleBaltop(message.channel)
     }
 
     if (!message.content.startsWith("!stocks")) {
