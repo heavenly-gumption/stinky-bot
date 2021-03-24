@@ -1,8 +1,8 @@
 import { BotModule } from "../types"
 import { Client, Message, TextChannel } from "discord.js"
 
-import { Shares, Transaction,
-    BALANCE_UNINITIALIZED_ERROR, LOW_BALANCE_ERROR, NOT_ENOUGH_SHARES_ERROR } from "../types/models/shares.dao"
+import { Shares, Transaction, NOT_ENOUGH_SHARES_ERROR } from "../types/models/shares.dao"
+import { BALANCE_UNINITIALIZED_ERROR, LOW_BALANCE_ERROR } from "../types/models/moneybalance.dao"
 import { getMoneyBalanceDao, getSharesDao } from "../utils/model"
 import { generateTable } from "../utils/table"
 

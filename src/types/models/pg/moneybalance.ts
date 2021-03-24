@@ -15,8 +15,13 @@ function initUser(user: string): Promise<null> {
     return db.none('INSERT INTO MoneyBalance VALUES ($1, 100)', [user]);
 }
 
+function transfer(from: string, to: string, amount: number): Promise<void> {
+    throw "NOT IMPLEMENTED"
+}
+
 export const MoneyBalancePgDao : MoneyBalanceDao = {
     getBalance,
     getAllBalances,
-    initUser
+    initUser,
+    transfer
 }
