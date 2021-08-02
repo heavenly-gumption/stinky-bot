@@ -13,6 +13,8 @@ import { loadEnabledModules, applyAllModules } from "./modules"
 // Initialize environment variables
 
 async function main() {
+    Error.stackTraceLimit = Infinity
+    
     const client = new Client()
     client.on("ready", async () => {
         const enabledModules = loadEnabledModules()

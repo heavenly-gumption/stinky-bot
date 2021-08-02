@@ -104,6 +104,8 @@ function onUserChangeState(channelId: string, user: User, speaking: Readonly<Spe
         const writer = createPCMBufferWriter(buffer)
         audio.on("data", (chunk: Buffer) => {
             addToBuffer(writer, chunk)
+        }).on("error", (error: Error) => {
+            console.log("Error when writing data for user id: " + user.id)
         })
     }
 
