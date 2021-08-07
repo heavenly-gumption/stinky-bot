@@ -32,7 +32,7 @@
     "@types/ws": "^6.0.4",
     "aws-sdk": "^2.824.0",
     "axios": "^0.21.1",
-    "chrono-node": "^2.1.10",
+    "chrono-node": "^2.2.4",
     "cron": "^1.8.2",
     "discord.js": "^12.5.3",
     "dotenv": "^8.2.0",
