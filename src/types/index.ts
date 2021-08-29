@@ -1,5 +1,3 @@
-export * from './module'
-
 export type Environment = {
     DATABASE_TYPE: string,
     DATABASE_URL: string,

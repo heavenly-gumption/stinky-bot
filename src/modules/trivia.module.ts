@@ -1,4 +1,3 @@
-import { BotModule } from "../types"
 import { ClientUser, User, Message, MessageReaction, 
     TextChannel, DMChannel, NewsChannel, Client } from "discord.js"
 import axios from "axios"
@@ -115,7 +114,7 @@ async function handleTrivia(channel: TextChannel | DMChannel | NewsChannel): Pro
 }
 
 
-export const TriviaModule: BotModule = (client: Client) => {
+export const TriviaModule = (client: Client) => {
     console.log("Loaded TriviaModule")
     client.on("message", async message => {
         if (message.content && message.channel && message.content.startsWith("!trivia")) {

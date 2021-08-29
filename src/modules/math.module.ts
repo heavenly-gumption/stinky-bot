@@ -1,4 +1,3 @@
-import { BotModule } from "../types"
 import { Client, Message } from "discord.js"
 import { mathjax } from "mathjax-full/js/mathjax"
 import { liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor"
@@ -94,7 +93,7 @@ async function handleMathJax(message: Message) {
 
 }
 
-export const MathModule: BotModule = (client: Client) => {
+export const MathModule = (client: Client) => {
     console.log("Loaded MathModule")
     client.on("message", async message => {
         if (message.channel && EQ_COMMAND_REGEX.test(message.content)) {

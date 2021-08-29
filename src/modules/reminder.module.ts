@@ -1,4 +1,3 @@
-import { BotModule } from "../types"
 import { Client, Message, MessageReaction, PartialUser, User, Channel, 
     TextChannel, MessageEmbed } from "discord.js"
 import { Reminder } from "../types/models/reminder.dao"
@@ -54,7 +53,7 @@ async function handleMessage(match: RegExpMatchArray, message: Message) {
         message.author.id, message.channel.id)
 }
 
-export const ReminderModule: BotModule = (client: Client) => {
+export const ReminderModule = (client: Client) => {
     console.log("Loaded ReminderModule")
     client.on("message", async message => {
         if (message.channel) {

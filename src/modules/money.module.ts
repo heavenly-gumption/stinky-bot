@@ -1,57 +1,13 @@
-import { BotModule } from "../types"
-import { getMoneyBalanceDao } from "../utils/model"
-import { User, Message, Client, TextChannel } from "discord.js"
-import { BALANCE_UNINITIALIZED_ERROR, LOW_BALANCE_ERROR } from "../types/models/moneybalance.dao"
-import pgPromise from "pg-promise"
+import { Message, Client, TextChannel } from "discord.js"
+import { MoneyService } from "../services/money"
 
 const MENTION_PATTERN = /<@!(\d+)>/
 
-const moneyBalanceDao = getMoneyBalanceDao()
-
-async function printBalance(message: Message) {
-    if (!message.author || !message.channel) {
-        return
-    }
-
-    const author: User = message.author
-
-    try {
-        const balance = await moneyBalanceDao.getBalance(author.id)
-        if (message.channel) {
-            await message.channel.send(author.username + " has **" + balance.amount + "** :gem: ")
-        }
-    } catch (error) {
-        await moneyBalanceDao.initUser(author.id)
-        await printBalance(message)
-    }
+export type MoneyModuleOptions = {
+    moneyService: MoneyService;
 }
 
-async function handlePay(sender: string, receiver: string, amount: number, channel: TextChannel) {
-    if (sender === receiver) {
-        return channel.send("You cannot send money to yourself.")
-    }
-    
-    if (isNaN(amount)) {
-        return channel.send("Please enter a number for the amount of money to send.")
-    }
-
-    if (amount <= 0) {
-        return channel.send("Amount of money to send must be positive.")
-    }
-
-    try {
-        await moneyBalanceDao.transfer(sender, receiver, amount)
-        return channel.send(`Successfully sent user :gem: **${amount}**.`)
-    } catch (err) {
-        if (err === BALANCE_UNINITIALIZED_ERROR) {
-            return channel.send("Your intended recipient does not have a balance set up. (have them run \`!money\`)")
-        } else if (err === LOW_BALANCE_ERROR) {
-            return channel.send("You do not have enough money to send.")
-        }
-    }
-}
-
-async function handleMessage(message: Message) {
+async function handleMessage(message: Message, moneyService: MoneyService) {
     if (!message.content || !message.channel || !message.author) {
         return
     }
@@ -61,7 +17,7 @@ async function handleMessage(message: Message) {
     }
 
     if (message.content.startsWith("!money")) {
-        return await printBalance(message)
+        return await moneyService.printBalance(message)
     }
 
     // !pay <mentioned-user> <amount>
@@ -72,14 +28,14 @@ async function handleMessage(message: Message) {
         if (receiverMatch) {
             const receiver = receiverMatch[1]
             const amount = parseFloat(args[2])
-            return await handlePay(sender, receiver, amount, message.channel)
+            return await moneyService.handlePay(sender, receiver, amount, message.channel)
         }
     }
 }
 
-export const MoneyModule: BotModule = (client: Client) => {
+export const MoneyModule = (client: Client, {moneyService}: MoneyModuleOptions) => {
     console.log("Loaded MoneyModule")
     client.on("message", async message => {
-        await handleMessage(message)
+        await handleMessage(message, moneyService)
     })
 }
