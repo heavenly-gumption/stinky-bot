@@ -1,4 +1,3 @@
-import { BotModule } from "../types"
 import { Client, Message, ClientUser } from "discord.js"
 import { getVibeHistoryDao } from "../utils/model"
 
@@ -116,7 +115,7 @@ async function handleLastNVibesMessage(message: Message) {
         `The chance of having a higher average vibe across ${trueN} vibe checks is ${pctChanceHigherAvg.toPrecision(PCT_PRECISION)}%.`)
 }
 
-export const VibeCheckModule: BotModule = (client: Client) => {
+export const VibeCheckModule = (client: Client) => {
     console.log("Loaded VibeCheckModule")
     client.on("message", async message => {
         if (message.channel && message.content === "vibe check") {

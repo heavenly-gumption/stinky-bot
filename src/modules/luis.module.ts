@@ -1,5 +1,3 @@
-import { BotModule } from "../types"
-
 import { Client } from "discord.js"
 import S3 from "aws-sdk/clients/s3"
 
@@ -62,7 +60,7 @@ function getResponse(messageContent: string){
     return result
 }
 
-export const LuisModule: BotModule = (client: Client) => {
+export const LuisModule = (client: Client) => {
     initializeMarkov()
     client.on("message", async message => {
         if (message.content && message.content.startsWith("!luis")) {

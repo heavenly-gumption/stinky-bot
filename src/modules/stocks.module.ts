@@ -1,4 +1,3 @@
-import { BotModule } from "../types"
 import { Client, Message, TextChannel } from "discord.js"
 
 import { Shares, Transaction, NOT_ENOUGH_SHARES_ERROR } from "../types/models/shares.dao"
@@ -305,7 +304,7 @@ async function handleMessage(message: Message) {
     }
 }
 
-export const StocksModule: BotModule = (client: Client) => {
+export const StocksModule = (client: Client) => {
     client.on("message", async message => {
         handleMessage(message)
     })

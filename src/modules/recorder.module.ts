@@ -1,4 +1,3 @@
-import { BotModule } from "../types"
 import { Client, Message, MessageReaction, User, Channel, 
     TextChannel, VoiceChannel, VoiceConnection, Speaking } from "discord.js"
 import S3 from "aws-sdk/clients/s3"
@@ -426,7 +425,7 @@ async function handleMessage(message: Message) {
     }
 }
 
-export const RecorderModule: BotModule = (client: Client) => {
+export const RecorderModule = (client: Client) => {
     console.log("Loaded RecorderModule")
 
     client.on("message", async (message: Message) => {

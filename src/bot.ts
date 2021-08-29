@@ -8,7 +8,7 @@ dotenv.config()
 import { Client } from "discord.js"
 
 import { Environment } from "./types"
-import { loadEnabledModules, applyAllModules } from "./modules"
+import { loadEnabledModules } from "./modules"
 
 // Initialize environment variables
 
@@ -17,9 +17,7 @@ async function main() {
     
     const client = new Client()
     client.on("ready", async () => {
-        const enabledModules = loadEnabledModules()
-        console.log("Applying modules")
-        await applyAllModules(client, enabledModules)
+        await loadEnabledModules(client)
         console.log("Applied all modules")
         console.log("Logged in!")
     })
