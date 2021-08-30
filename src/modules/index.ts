@@ -11,6 +11,7 @@ import { MathModule } from "./math.module"
 import { RecorderModule } from "./recorder.module"
 import { LuisModule } from "./luis.module"
 import { StocksModule } from "./stocks.module"
+import { DotaModule } from "./dota.module"
 
 export function makeModulePath(moduleName: string): string {
     return `${moduleName}.module.js`
@@ -27,7 +28,8 @@ export function loadEnabledModules(): BotModule[] {
         MathModule,
         RecorderModule,
         LuisModule,
-        StocksModule
+        StocksModule,
+        DotaModule
     ]
 }
 
