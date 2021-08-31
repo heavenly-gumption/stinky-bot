@@ -4,7 +4,7 @@ import { User, Message, Client, TextChannel } from "discord.js"
 import { BALANCE_UNINITIALIZED_ERROR, LOW_BALANCE_ERROR } from "../types/models/moneybalance.dao"
 import pgPromise from "pg-promise"
 
-const MENTION_PATTERN = /<@!(\d+)>/
+const MENTION_PATTERN = /<@!?(\d+)>/
 
 const moneyBalanceDao = getMoneyBalanceDao()
 
