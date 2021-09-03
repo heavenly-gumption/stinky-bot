@@ -26,7 +26,9 @@ function formatTime(durationSec: number): string {
 }
 
 async function register(member: GuildMember, channel: TextChannel, steamId: string) {
-    await getDotaPlayerDao().registerPlayer(member.id, steamId)
+    const matches = await steamService().getMatchHistory(steamId, 1)
+    const match = matches.result.matches[0]
+    await getDotaPlayerDao().registerPlayer(member.id, steamId, match.match_id)
     await channel.send(`Registered <@${member.id}> to steam id ${steamId}.`)
 }
 
