@@ -13,6 +13,7 @@ import { MoneyBalanceFirestoreDao } from "../types/models/firestore/moneybalance
 import { ReminderFirestoreDao } from "../types/models/firestore/reminder"
 import { VibeHistoryFirestoreDao } from "../types/models/firestore/vibehistory"
 import { SharesFirestoreDao } from "../types/models/firestore/shares"
+import { DotaPlayerFirestoreDao } from "../types/models/firestore/dotaplayers"
 
 const isPg = process.env.DATABASE_TYPE === "pg"
 
@@ -37,4 +38,11 @@ export function getSharesDao() {
         throw "Shares are not supported for Postgres"
     }
     return SharesFirestoreDao
+}
+
+export function getDotaPlayerDao() {
+    if (isPg) {
+        throw "DotaPlayers are not supported for Postgres"
+    }
+    return DotaPlayerFirestoreDao
 }

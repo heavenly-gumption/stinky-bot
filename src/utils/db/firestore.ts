@@ -80,3 +80,13 @@ export async function all<T>(ref: FirebaseFirestore.CollectionReference): Promis
     const snapshot = await ref.get()
     return snapshot.docs.map(doc => doc.data() as T)
 }
+
+// Get all documents in a collection as a map of id to data.
+export async function allMap<T>(ref: FirebaseFirestore.CollectionReference): Promise<Map<string, T>> {
+    const snapshot = await ref.get()
+    const map = new Map<string, T>()
+    snapshot.docs.forEach(doc => {
+        map.set(doc.id, doc.data() as T)
+    })
+    return map
+}
