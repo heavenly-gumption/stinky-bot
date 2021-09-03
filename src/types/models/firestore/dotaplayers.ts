@@ -65,10 +65,6 @@ async function updateMMR(discordId: string, newMMR: number) {
     const player = await getOne<DotaPlayer>(playerRef, discordId)
     const oldMMR = player.mmr
 
-    if (oldMMR === -1) {
-        return
-    }
-
     await playerRef.doc(discordId).update({
         mmr: newMMR
     })
