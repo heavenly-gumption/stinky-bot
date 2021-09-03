@@ -3,9 +3,10 @@ import { Client, GuildMember, Message, TextChannel, MessageEmbed } from "discord
 
 import { BotModule } from "../types"
 import { DotaPlayer } from "../types/models/dotaplayers.dao"
+import { Match, LobbyType } from "../types/services/opendota/opendota"
 
 import { steamService } from "../services/steam/steam.service"
-import { openDotaService, Match, LobbyType } from "../services/opendota/opendota.service"
+import { openDotaService } from "../services/opendota/opendota.service"
 
 import { getDotaPlayerDao } from "../utils/model"
 import { generateTable } from "../utils/table"
@@ -27,6 +28,11 @@ function formatTime(durationSec: number): string {
 async function register(member: GuildMember, channel: TextChannel, steamId: string) {
     await getDotaPlayerDao().registerPlayer(member.id, steamId)
     await channel.send(`Registered <@${member.id}> to steam id ${steamId}.`)
+}
+
+async function unregister(member: GuildMember, channel: TextChannel) {
+    await getDotaPlayerDao().unregisterPlayer(member.id)
+    await channel.send(`Unregistered <@${member.id}>.`)
 }
 
 async function setMMR(member: GuildMember, channel: TextChannel, mmr: number) {
@@ -59,7 +65,10 @@ function getMMRChange(won: boolean, partySize: number) {
 async function updateMMR(updates: MMRUpdate[]) {
     const promises = []
     for (const update of updates) {
-        getDotaPlayerDao().updateMMR(update.discordId, update.newMMR)
+        promises.push(getDotaPlayerDao().updateMMR(update.discordId, update.newMMR))
+    }
+    for (const promise of promises) {
+        await promise
     }
 }
 
@@ -67,7 +76,6 @@ async function runUpdate(channel: TextChannel) {
     const players = await getDotaPlayerDao().getAllPlayers()
     const steamToDiscordId = new Map<string, string>()
     const steamIds = new Set<string>()
-    const heroes = await openDotaService().getHeroes()
 
     const matchesToParse = new Map<number, Match>()
     const updatePromises = []
@@ -100,11 +108,11 @@ async function runUpdate(channel: TextChannel) {
 
         // select random hero from the players in the game as the icon
         const heroId = playersInGame[Math.floor(Math.random() * playersInGame.length)].hero_id
-        const hero = heroes[heroId.toString()]
+        const hero = await openDotaService().getHero(heroId)
         const heroName = hero ? hero.name.substring(hero.name.lastIndexOf("_") + 1) : ""
         const heroIconUrl = `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroName}.png`
 
-        const matchSummary = `[ **${teamThatWon} Victory | ${match.radiant_score} - ${match.dire_score} | ${formatTime(match.duration)}** ]`
+        const matchSummary = `**[ ${teamThatWon} Victory | ${match.radiant_score} - ${match.dire_score} | ${formatTime(match.duration)} ]**`
         const playersList = steamIdsInGame.map(steamId => steamToDiscordId.get(steamId))
             .map(discordId => `<@${discordId}>`)
             .join(",")
@@ -180,6 +188,9 @@ async function handleMessage(message: Message) {
             case "register":
                 await register(message.member, message.channel, args[2])
                 break
+            case "unregister":
+                await unregister(message.member, message.channel)
+                break
             case "setmmr":
                 await setMMR(message.member, message.channel, parseInt(args[2], 10))
                 break
@@ -187,10 +198,6 @@ async function handleMessage(message: Message) {
                 await getMMR(message.member, message.channel)
                 break
         }
-    }
-
-    if (!message.content.startsWith("!stocks")) {
-        return
     }
 }
 

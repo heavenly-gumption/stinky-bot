@@ -42,6 +42,14 @@ async function registerPlayer(discordId: string, steamId: string) {
     }
 }
 
+async function unregisterPlayer(discordId: string) {
+    const playerRef = getFirestoreConnection().collection(DOTA_COLLECTION_NAME)
+    await playerRef.doc(discordId).delete()
+    if (allPlayers) {
+        allPlayers.delete(discordId)
+    }
+}
+
 async function setLastMatchId(discordId: string, lastMatchId: number) {
     const playerRef = getFirestoreConnection().collection(DOTA_COLLECTION_NAME)
     await playerRef.doc(discordId).update({
@@ -80,6 +88,7 @@ export const DotaPlayerFirestoreDao: DotaPlayerDao = {
     getAllPlayers,
     getPlayer,
     registerPlayer,
+    unregisterPlayer,
     setLastMatchId,
     updateMMR
 }

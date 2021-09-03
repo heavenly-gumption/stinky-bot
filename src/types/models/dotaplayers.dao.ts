@@ -16,6 +16,7 @@ export type DotaPlayerDao = {
     getAllPlayers: () => Promise<Map<string, DotaPlayer>>
     getPlayer: (discordId: string) => Promise<DotaPlayer>
     registerPlayer: (discordId: string, steamId: string) => Promise<void>
+    unregisterPlayer: (discordId: string) => Promise<void>
     setLastMatchId: (discordId: string, lastMatchId: number) => Promise<void>
     updateMMR: (discordId: string, newMMR: number) => Promise<void>
 }

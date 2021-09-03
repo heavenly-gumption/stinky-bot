@@ -32,5 +32,13 @@
         "no-var": "error",
         "functional/no-class": "error",
         "functional/prefer-type-literal": "error"
-    }
+    },
+    "overrides": [
+        {
+            "files": ["*.ts"],
+            "rules": {
+                "@typescript-eslint/camelcase": "off"
+            }
+        }
+    ]
 }
