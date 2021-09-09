@@ -109,7 +109,12 @@ async function runUpdate(channel: TextChannel) {
         const playerWon = radiantPlayers.length > 0 && match.radiant_win || radiantPlayers.length === 0 && !match.radiant_win
 
         // select random hero from the players in the game as the icon
-        const heroId = playersInGame[Math.floor(Math.random() * playersInGame.length)].hero_id
+        let heroId = 0
+        try {
+            heroId = playersInGame[Math.floor(Math.random() * playersInGame.length)].hero_id
+        } catch (err) {
+            console.log("matchId: " + matchId)
+        }
         const hero = await openDotaService().getHero(heroId)
         const heroName = hero ? hero.name.replace("npc_dota_hero_", "") : ""
         const heroIconUrl = `https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroName}.png`
