@@ -8,6 +8,7 @@ import { createPCMBuffer, createPCMBufferWriter,
 import { PCMBuffer, PCMBufferWriter } from "../types/audiobuffer"
 import { Clip } from "../types/models/clip.dao"
 import { getClipDao } from "../utils/model"
+import { sendPaginatedMessage } from "../utils/discordutils"
 import { Readable } from "stream"
 import * as fs from "fs"
 
@@ -273,7 +274,7 @@ async function handlePlayClip(channel: VoiceChannel, clipName: string, textChann
 
 async function handleListClips(textChannel: TextChannel) {
     const clips = await clipDao.getAllClips()
-    return await textChannel.send(clips.map(c => c.name).sort().join(", "))
+    return await sendPaginatedMessage(textChannel, clips.map(c => c.name).sort().join(", "))
 }
 
 async function handleRenameClip(oldName: string, newName: string, textChannel: TextChannel) {
