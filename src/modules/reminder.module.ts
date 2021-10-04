@@ -67,7 +67,14 @@ export const ReminderModule: BotModule = (client: Client) => {
 
     // When a user reacts to a message, add them to the list of users to ping. 
     client.on("messageReactionAdd", async (reaction: MessageReaction, user: User | PartialUser) => {
-        await reminderDao.addInterestedToReminder(reaction.message.id, user.id)
+        try {
+            await reminderDao.addInterestedToReminder(reaction.message.id, user.id)
+        } catch (err) {
+            if (err.code !== 5) {
+                // Item not found error
+                console.error(err)
+            }
+        }
     })
 
     // Every minute, periodically query the Reminders table for any reminders that are due.
