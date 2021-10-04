@@ -40,55 +40,6 @@ export enum GameMode {
   Mutation = 24,
 }
 
-export function gameModeToString(gameMode: GameMode) {
-  switch (gameMode) {
-    case GameMode.AllPick:
-      return "All Pick"
-    case GameMode.CaptainsMode:
-      return "Captain's Mode"
-    case GameMode.RandomDraft:
-      return "Random Draft"
-    case GameMode.SingleDraft:
-      return "Single Draft"
-    case GameMode.AllRandom:
-      return "All Random"
-    case GameMode.Diretide:
-      return "Diretide"
-    case GameMode.ReverseCaptainsMode:
-      return "Reverse Captain's Mode"
-    case GameMode.TheGreeviling:
-      return "The Greeviling"
-    case GameMode.MidOnly:
-      return "Mid Only"
-    case GameMode.LeastPlayed:
-      return "Least Played"
-    case GameMode.LimitedHeroes:
-      return "Limited Heroes"
-    case GameMode.CompendiumMatchmaking:
-      return "Compendium Matchmaking"
-    case GameMode.Custom:
-      return "Custom Dota"
-    case GameMode.CaptainsDraft:
-      return "Captain's Draft"
-    case GameMode.BalancedDraft:
-      return "Balanced Draft"
-    case GameMode.AbilityDraft:
-      return "Ability Draft"
-    case GameMode.AllRandomDeathmatch:
-      return "All Random Deathmatch"
-    case GameMode.Mid1v1:
-      return "Mid 1v1"
-    case GameMode.AllDraft:
-      return "All Pick"
-    case GameMode.Turbo:
-      return "Turbo"
-    case GameMode.Mutation:
-      return "Mutation"
-    default:
-      return "Dota"
-  }
-}
-
 export type Player = {
   account_id: number;
   player_slot: number;

@@ -3,7 +3,7 @@ import { Client, GuildMember, Message, TextChannel, MessageEmbed } from "discord
 
 import { BotModule } from "../types"
 import { DotaPlayer } from "../types/models/dotaplayers.dao"
-import { Match, LobbyType, gameModeToString } from "../types/services/opendota/opendota"
+import { Match, LobbyType } from "../types/services/opendota/opendota"
 
 import { steamService } from "../services/steam/steam.service"
 import { openDotaService } from "../services/opendota/opendota.service"
@@ -120,9 +120,12 @@ async function runUpdate(channel: TextChannel) {
             .join(",")
 
         const gameType = match.lobby_type === LobbyType.RankedMatchmaking ? "a Ranked" : "an Unranked"
-        const gameMode = gameModeToString(match.game_mode)
 
-        let description = `${matchSummary}\n\n${playersList} ${(playerWon ? "won" : "lost")} ${gameType} game of ${gameMode}!`
+        let description = matchSummary 
+            + "\n\n" 
+            + playersList + " " 
+            + (playerWon ? "won" : "lost") + " "
+            + gameType + " game of Dota!"
 
         // Perform MMR updates for ranked matches, add to description
         if (match.lobby_type === LobbyType.RankedMatchmaking) {
