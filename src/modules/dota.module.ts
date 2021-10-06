@@ -76,6 +76,7 @@ async function updateMMR(updates: MMRUpdate[]) {
 
 async function runUpdate(channel: TextChannel) {
     const players = await getDotaPlayerDao().getAllPlayers()
+    const discordIdToLastMatchId = new Map<string, number>()
     const steamToDiscordId = new Map<string, string>()
     const steamIds = new Set<string>()
 
@@ -85,20 +86,32 @@ async function runUpdate(channel: TextChannel) {
         // construct helper data structures
         steamIds.add(player.steamId)
         steamToDiscordId.set(player.steamId, key)
+        discordIdToLastMatchId.set(key, player.lastMatchId)
 
-        const matches = await steamService().getMatchHistory(player.steamId, 1)
-        const match = matches.result.matches[0]
+        try {
+            const matches = await steamService().getMatchHistory(player.steamId, 10)
 
-        // Update lastMatchId if there is a new match, and add it to the list of matches to parse
-        if (match.match_id > player.lastMatchId) {
-            const promise = getDotaPlayerDao().setLastMatchId(key, match.match_id)
-            updatePromises.push(promise)
-            const matchDetails = await openDotaService().getMatch(match.match_id.toString())
-            matchesToParse.set(match.match_id, matchDetails)
+            // If there is a new match, add it to the list of matches to parse
+            const newMatches = matches.result.matches.filter(match => match.match_id > player.lastMatchId)
+            for (const match of newMatches) {
+                if (matchesToParse.has(match.match_id)) {
+                    continue;
+                }
+                try {
+                    const matchDetails = await openDotaService().getMatch(match.match_id.toString())
+                    matchesToParse.set(match.match_id, matchDetails)
+                } catch (err) {
+                    console.log("Unable to fetch match id " + match.match_id + " from OpenDota")
+                }
+            }
+        } catch (err) {
+            console.log("Unable to fetch match history for player " + player.steamId)
         }
     }
 
-    matchesToParse.forEach(async (match, matchId) => {
+    const lastMatchUpdates = new Map<string, number>()
+
+    for (const [matchId, match] of [...matchesToParse].sort()) {
         const playersInGame = match.players
             .filter(p => p.account_id !== null)
             .filter(p => steamIds.has(p.account_id.toString()))
@@ -163,7 +176,24 @@ async function runUpdate(channel: TextChannel) {
             .setURL(`https://www.opendota.com/matches/${match.match_id}`)
             .setThumbnail(heroIconUrl)
         await channel.send(embed)
-    })
+
+
+        // Update the last match played for each of the players in the game;
+        // only update the map if it's greater than the existing value in the map
+        // This makes an assumption that OpenDota won't skip a match
+        steamIdsInGame.forEach(steamId => {
+            const discordId = steamToDiscordId.get(steamId)!
+            if (match.match_id > discordIdToLastMatchId.get(discordId)!
+                && (!lastMatchUpdates.has(discordId) || lastMatchUpdates.get(discordId)! < match.match_id)) {
+                lastMatchUpdates.set(discordId, match.match_id)
+            }
+        })
+    }
+
+    for (const [discordId, lastMatchId] of lastMatchUpdates) {
+        const promise = getDotaPlayerDao().setLastMatchId(discordId, lastMatchId)
+        updatePromises.push(promise)
+    }
 
     // Cleanup
     for (const promise of updatePromises) {
