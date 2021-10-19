@@ -29,9 +29,10 @@ async function getPlayer(discordId: string) {
     return player
 }
 
-async function registerPlayer(discordId: string, steamId: string, lastMatchId: number) {
+async function registerPlayer(discordId: string, username: string, steamId: string, lastMatchId: number) {
     const playerRef = getFirestoreConnection().collection(DOTA_COLLECTION_NAME)
     const player = {
+        username: username,
         steamId: steamId,
         mmr: -1,
         lastMatchId: lastMatchId
