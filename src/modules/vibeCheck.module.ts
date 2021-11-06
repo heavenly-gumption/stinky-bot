@@ -3,7 +3,7 @@ import { Client, Message, ClientUser } from "discord.js"
 import { getVibeHistoryDao } from "../utils/model"
 
 const VIBE_CHECK_MAX = 20
-const LAST_N_VIBES_MAX = 50
+const LAST_N_VIBES_MAX = 150
 const MILLIS_IN_SECOND = 1000
 const SECONDS_IN_MINUTE = 60
 const LOCKOUT_MINUTES = 60
@@ -82,6 +82,11 @@ async function handleLastNVibesMessage(message: Message) {
     const n = parseInt(match[0])
     if (n > LAST_N_VIBES_MAX) {
         await message.channel.send(`You may only see your last ${LAST_N_VIBES_MAX} vibes.`)
+        return
+    }
+
+    if (n < 1) {
+        await message.channel.send("Please input a positive number.")
         return
     }
 
