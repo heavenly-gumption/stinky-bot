@@ -138,7 +138,7 @@ export const VibeCheckModule: BotModule = (client: Client) => {
     const tempRoleManager = getTempRoleManager(client)
 
     client.on("message", async message => {
-        if (message.channel && message.content === "test vibe check") {
+        if (message.channel && message.content === "vibe check") {
             await handleVibeCheckMessage(message, tempRoleManager)
         } else if (message.channel 
             && message.content 
