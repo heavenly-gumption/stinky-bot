@@ -1,6 +1,7 @@
 import { BotModule } from "../types"
 import { Client, Message, ClientUser } from "discord.js"
 import { getVibeHistoryDao } from "../utils/model"
+import { getTempRoleManager, TempRoleManager } from "../utils/temproles"
 
 const VIBE_CHECK_MAX = 20
 const LAST_N_VIBES_MAX = 150
@@ -10,6 +11,9 @@ const LOCKOUT_MINUTES = 60
 const LOCKOUT_MILLIS = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * LOCKOUT_MINUTES
 const HUNDRED = 100
 const PCT_PRECISION = 5
+
+const HIGH_VIBER_ROLE = "high viber"
+const HIGH_VIBER_EXPIRY_MS = LOCKOUT_MILLIS
 
 const vibeHistoryDao = getVibeHistoryDao()
 
@@ -40,13 +44,22 @@ function ways(k: number, n: number, s: number): number {
     return ans
 }
 
-async function doVibeCheck(message: Message) {
+async function doVibeCheck(message: Message, tempRoleManager: TempRoleManager) {
     const vibeCheck = Math.floor(Math.random() * VIBE_CHECK_MAX + 1)
     await vibeHistoryDao.addVibe(message.author!.id, vibeCheck)
     await message.channel!.send("Current Vibe: `" + vibeCheck + "`")
+    if (vibeCheck === VIBE_CHECK_MAX && message.guild) {
+        const expiryTime = new Date(Date.now() + HIGH_VIBER_EXPIRY_MS)
+        await tempRoleManager.addTempRole(message.client, {
+            guild: message.guild.id,
+            user: message.author.id,
+            roleName: HIGH_VIBER_ROLE,
+            expiryTime: expiryTime
+        })
+    }
 }
 
-async function handleVibeCheckMessage(message: Message) {
+async function handleVibeCheckMessage(message: Message, tempRoleManager: TempRoleManager) {
     if (!message.author || !message.channel) {
         return
     }
@@ -54,12 +67,12 @@ async function handleVibeCheckMessage(message: Message) {
     // check lockout
     const lastVibeResponse = await vibeHistoryDao.getLastNVibes(message.author.id, 1)
     if (!lastVibeResponse || lastVibeResponse.length === 0) {
-        doVibeCheck(message)
+        doVibeCheck(message, tempRoleManager)
     } else {
         const lastVibe = lastVibeResponse[0]
         const timeDiff = Date.now() - lastVibe.time.getTime()
         if (timeDiff > LOCKOUT_MILLIS) {
-            doVibeCheck(message)
+            doVibeCheck(message, tempRoleManager)
         } else {
             const minutes = Math.ceil((LOCKOUT_MILLIS - timeDiff) / MILLIS_IN_SECOND / SECONDS_IN_MINUTE)
             const noun = minutes > 1 ? "minutes" : "minute"
@@ -122,10 +135,11 @@ async function handleLastNVibesMessage(message: Message) {
 }
 
 export const VibeCheckModule: BotModule = (client: Client) => {
-    console.log("Loaded VibeCheckModule")
+    const tempRoleManager = getTempRoleManager(client)
+
     client.on("message", async message => {
-        if (message.channel && message.content === "vibe check") {
-            await handleVibeCheckMessage(message)
+        if (message.channel && message.content === "test vibe check") {
+            await handleVibeCheckMessage(message, tempRoleManager)
         } else if (message.channel 
             && message.content 
             && !(message.author instanceof ClientUser)
@@ -134,4 +148,6 @@ export const VibeCheckModule: BotModule = (client: Client) => {
             await handleLastNVibesMessage(message)
         }
     })
+
+    console.log("Loaded VibeCheckModule")
 }
