@@ -14,6 +14,7 @@ import { ReminderFirestoreDao } from "../types/models/firestore/reminder"
 import { VibeHistoryFirestoreDao } from "../types/models/firestore/vibehistory"
 import { SharesFirestoreDao } from "../types/models/firestore/shares"
 import { DotaPlayerFirestoreDao } from "../types/models/firestore/dotaplayers"
+import { TempRoleFirestoreDao } from "../types/models/firestore/temproles"
 
 const isPg = process.env.DATABASE_TYPE === "pg"
 
@@ -45,4 +46,11 @@ export function getDotaPlayerDao() {
         throw "DotaPlayers are not supported for Postgres"
     }
     return DotaPlayerFirestoreDao
+}
+
+export function getTempRoleDao() {
+    if (isPg) {
+        throw "TempRoles are not supported for Postgres"
+    }
+    return TempRoleFirestoreDao
 }
