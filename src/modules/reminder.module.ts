@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
-import { Client, Message, MessageReaction, PartialUser, User, Channel, 
-    TextChannel, MessageEmbed } from "discord.js"
+import { Client, Message, MessageReaction, PartialMessageReaction,  PartialUser, User, Channel, 
+    TextChannel, EmbedBuilder, StageChannel } from "discord.js"
 import { Reminder } from "../types/models/reminder.dao"
 import { getReminderDao } from "../utils/model"
 
@@ -10,11 +10,11 @@ import { CronJob } from "cron"
 const COMMAND_REGEX: RegExp = /!remindme (.+?) to (.+)/
 const reminderDao = getReminderDao()
 
-function createEmbed(author: string, date: Date, content: string): MessageEmbed {
+function createEmbed(author: string, date: Date, content: string): EmbedBuilder {
     // Create time string like "9/6/2020, 11:46:39 AM PDT"
     const timeString = date.toLocaleString("en-US",
         {timeZone: "America/Los_Angeles", timeZoneName: "short"})
-    return new MessageEmbed({
+    return new EmbedBuilder({
         "title": "ReminderBot",
         "description": `<@${author}> created a reminder.`,
         "color": 13632027,
@@ -44,10 +44,13 @@ function createEmbed(author: string, date: Date, content: string): MessageEmbed 
 
 // Creates a reminder at a given time specified with natural language.
 async function handleMessage(match: RegExpMatchArray, message: Message) {
+    if (!(message.channel instanceof TextChannel)) {
+        return
+    }
     const date: Date = chrono.parseDate(match[1], new Date(), {forwardDate: true})
     const content: string = match[2]
     const reminderMessages: Message | Array<Message> = await message.channel.send(
-        createEmbed(message.author.id, date, content))
+        {embeds: [createEmbed(message.author.id, date, content)]})
     const reminderMessage: Message = Array.isArray(reminderMessages) ? 
         reminderMessages[0] : reminderMessages
     await reminderDao.createReminder(reminderMessage.id, date, content, 
@@ -56,7 +59,7 @@ async function handleMessage(match: RegExpMatchArray, message: Message) {
 
 export const ReminderModule: BotModule = (client: Client) => {
     console.log("Loaded ReminderModule")
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         if (message.channel) {
             const match: RegExpMatchArray | null = message.content.match(COMMAND_REGEX)
             if (match !== null) {
@@ -66,7 +69,7 @@ export const ReminderModule: BotModule = (client: Client) => {
     })
 
     // When a user reacts to a message, add them to the list of users to ping. 
-    client.on("messageReactionAdd", async (reaction: MessageReaction, user: User | PartialUser) => {
+    client.on("messageReactionAdd", async (reaction, user) => {
         try {
             await reminderDao.addInterestedToReminder(reaction.message.id, user.id)
         } catch (err) {

@@ -28,7 +28,7 @@ function shuffle(arr: any[]): any[] {
 }
 
 function reactionFilter(reaction: MessageReaction, user: User): boolean {
-    return REACTION_NUMBERS.includes(reaction.emoji.name) && !(user instanceof ClientUser)
+    return REACTION_NUMBERS.includes(reaction.emoji.name ?? "") && !(user instanceof ClientUser)
 }
 
 function getProgressBar(startTime: number, currentTime: number, totalTime: number): string {
@@ -71,12 +71,12 @@ async function handleTrivia(channel: TextChannel | DMChannel | NewsChannel): Pro
     }, EDIT_INTERVAL)
 
     // React to the message with [1], [2], [3], [4] in order
-    allAnswers.forEach(async (q, i) => {
+    for (let i = 0; i < 4; i++) {
         await sentMessage.react(REACTION_NUMBERS[i])
-    })
+    }
 
     // Collect reactions
-    const collector = sentMessage.createReactionCollector(reactionFilter, {time: TIME_TO_ANSWER})
+    const collector = sentMessage.createReactionCollector({filter: reactionFilter, time: TIME_TO_ANSWER})
     collector.on("end", async collected => {
         // Stop editing the message
         clearInterval(interval)
@@ -117,7 +117,10 @@ async function handleTrivia(channel: TextChannel | DMChannel | NewsChannel): Pro
 
 export const TriviaModule: BotModule = (client: Client) => {
     console.log("Loaded TriviaModule")
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
+        if (!(message.channel instanceof TextChannel)) {
+            return
+        }
         if (message.content && message.channel && message.content.startsWith("!trivia")) {
             await handleTrivia(message.channel)
         }

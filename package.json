@@ -7,7 +7,7 @@
     "build-ts": "tsc",
     "lint-ts": "tsc --noEmit && eslint \"**/*.{js,ts}\" --quiet --fix",
     "clean-dist": "rm -rf dist",
-    "postinstall": "npm run build-ts && npm run lint-ts && npm run move-scripts",
+    "postinstall": "npm run build-ts && npm run lint-ts",
     "move-scripts": "cp -R src/scripts dist/scripts && mkdir -p dist/__temp && chmod +x dist/scripts/*",
     "build": "npm run clean-dist && npm run postinstall",
     "start": "node dist/bot.js",
@@ -16,14 +16,15 @@
   "author": "Pablo Morales",
   "license": "MIT",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^2.34.0",
-    "@typescript-eslint/parser": "^2.34.0",
-    "eslint": "^6.8.0",
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "eslint": "^7.1.0",
     "eslint-plugin-functional": "^1.0.3",
-    "typescript": "^3.9.7"
+    "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.5.3",
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.16.0",
     "@types/cron": "^1.7.2",
     "@types/mathjax": "0.0.36",
     "@types/node": "^12.19.12",
@@ -34,12 +35,14 @@
     "axios": "^0.21.1",
     "chrono-node": "^2.2.4",
     "cron": "^1.8.2",
-    "discord.js": "^12.5.3",
+    "discord.js": "^14.9.0",
     "dotenv": "^8.2.0",
-    "ffmpeg-static": "^4.2.7",
+    "ffmpeg-static": "^4.4.1",
     "firebase-admin": "^9.4.2",
     "markovchain": "^1.0.2",
     "mathjax-full": "^3.1.2",
-    "pg-promise": "^10.5.6"
+    "pg-promise": "^10.5.6",
+    "prism-media": "^2.0.0-alpha.0",
+    "sodium-native": "^3.4.1"
   }
 }

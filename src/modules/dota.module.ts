@@ -1,5 +1,5 @@
 import { CronJob } from "cron"
-import { Client, GuildMember, Message, TextChannel, MessageEmbed } from "discord.js"
+import { Client, GuildMember, Message, TextChannel, EmbedBuilder } from "discord.js"
 
 import { BotModule } from "../types"
 import { DotaPlayer } from "../types/models/dotaplayers.dao"
@@ -156,13 +156,13 @@ async function runUpdate(channel: TextChannel) {
         }
 
         // Assemble and send embed
-        const embed = new MessageEmbed()
-            .setColor(playerWon ? "0x00ff00" : "0xff0000")
+        const embed = new EmbedBuilder()
+            .setColor(playerWon ? 0x00ff00 : 0xff0000)
             .setTitle(`Dota 2 - Match ${match.match_id}`)
             .setDescription(description)
             .setURL(`https://www.opendota.com/matches/${match.match_id}`)
             .setThumbnail(heroIconUrl)
-        await channel.send(embed)
+        await channel.send({embeds: [embed]})
     })
 
     // Cleanup
@@ -201,7 +201,7 @@ async function handleMessage(message: Message) {
 }
 
 export const DotaModule: BotModule = (client: Client) => {
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         handleMessage(message)
     })
 

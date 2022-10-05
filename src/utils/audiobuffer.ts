@@ -1,5 +1,4 @@
 import { PCMBuffer, PCMBufferWriter } from "../types/audiobuffer"
-import { Writable } from "stream"
 
 const SAMPLE_RATE = 48000
 const BIT_DEPTH = 16
@@ -54,7 +53,6 @@ export function createPCMBufferWriter(buffer: PCMBuffer): PCMBufferWriter {
 export function addToBuffer(bufferWriter: PCMBufferWriter, chunk: Buffer): void {
     // input comes in 2 channels (l/r), but we're only storing mono.
     // since we're optimizing for standard mics, just grabbing the first channel is fine
-    const offset = 0
     for (let offset = 0; offset < chunk.length; offset += 2 * INPUT_CHANNELS) {
         const value = chunk.readInt16LE(offset)
         const buf = bufferWriter.pcmBuffer.data
