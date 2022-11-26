@@ -202,7 +202,11 @@ async function handleMessage(message: Message) {
 
 export const DotaModule: BotModule = (client: Client) => {
     client.on("message", async message => {
-        handleMessage(message)
+        try {
+            handleMessage(message)
+        } catch (error) {
+            console.error("error when executing DotaModule: " + error)
+        }
     })
 
     // Every minute, poll for new games

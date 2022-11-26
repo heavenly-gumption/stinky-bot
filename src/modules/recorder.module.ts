@@ -431,7 +431,11 @@ export const RecorderModule: BotModule = (client: Client) => {
     console.log("Loaded RecorderModule")
 
     client.on("message", async (message: Message) => {
-        handleMessage(message)
+        try {
+            handleMessage(message)
+        } catch (error) {
+            console.error("error when executing RecorderModule: " + error)
+        }
     })
 
     client.on("voiceStateUpdate", async (oldMember, newMember) => {
