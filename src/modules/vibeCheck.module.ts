@@ -1,5 +1,5 @@
 import { BotModule } from "../types"
-import { Client, Message, ClientUser } from "discord.js"
+import { Client, Message, ClientUser, TextChannel } from "discord.js"
 import { getVibeHistoryDao } from "../utils/model"
 import { getTempRoleManager, TempRoleManager } from "../utils/temproles"
 
@@ -45,6 +45,9 @@ function ways(k: number, n: number, s: number): number {
 }
 
 async function doVibeCheck(message: Message, tempRoleManager: TempRoleManager) {
+    if (!message.channel || !(message.channel instanceof TextChannel)) {
+        return
+    }
     const vibeCheck = Math.floor(Math.random() * VIBE_CHECK_MAX + 1)
     await vibeHistoryDao.addVibe(message.author!.id, vibeCheck)
     await message.channel!.send("Current Vibe: `" + vibeCheck + "`")
@@ -60,7 +63,7 @@ async function doVibeCheck(message: Message, tempRoleManager: TempRoleManager) {
 }
 
 async function handleVibeCheckMessage(message: Message, tempRoleManager: TempRoleManager) {
-    if (!message.author || !message.channel) {
+    if (!message.author || !message.channel || !(message.channel instanceof TextChannel)) {
         return
     }
 
@@ -82,7 +85,7 @@ async function handleVibeCheckMessage(message: Message, tempRoleManager: TempRol
 }
 
 async function handleLastNVibesMessage(message: Message) {
-    if (!message.author || !message.channel) {
+    if (!message.author || !message.channel || !(message.channel instanceof TextChannel)) {
         return
     }
 
@@ -137,7 +140,7 @@ async function handleLastNVibesMessage(message: Message) {
 export const VibeCheckModule: BotModule = (client: Client) => {
     const tempRoleManager = getTempRoleManager(client)
 
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         if (message.channel && message.content === "vibe check") {
             await handleVibeCheckMessage(message, tempRoleManager)
         } else if (message.channel 

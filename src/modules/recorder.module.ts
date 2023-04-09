@@ -1,16 +1,16 @@
 import { BotModule } from "../types"
-import { Client, Message, MessageReaction, User, Channel, 
-    TextChannel, VoiceChannel, VoiceConnection, Speaking } from "discord.js"
+import { Client, Message, TextChannel, VoiceBasedChannel } from "discord.js"
+import { OpusEncoder } from "@discordjs/opus"
+import { joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnection, VoiceConnectionStatus, AudioReceiveStream, StreamType, AudioReceiveStreamOptions } from "@discordjs/voice"
 import S3 from "aws-sdk/clients/s3"
 import { createPCMBuffer, createPCMBufferWriter, 
     addToBuffer, prepareBuffer, timeToOffset, clearBuffer,
     secondsToSampleAlignedOffset, offsetToSeconds } from "../utils/audiobuffer"
-import { PCMBuffer, PCMBufferWriter } from "../types/audiobuffer"
+import { PCMBuffer } from "../types/audiobuffer"
 import { Clip } from "../types/models/clip.dao"
 import { getClipDao } from "../utils/model"
 import { sendPaginatedMessage } from "../utils/discordutils"
 import { Readable } from "stream"
-import * as fs from "fs"
 
 const BUCKET: string = process.env.AWS_S3_BUCKET ?? "heavenly-gumption"
 const FILE_EXT = "pcm"
@@ -36,6 +36,8 @@ const s3 = new S3({
 })
 
 const clipDao = getClipDao()
+const player = createAudioPlayer()
+const opusEncoder = new OpusEncoder(48000, 2)
 
 type VoiceChannelData = {
     connection: VoiceConnection;
@@ -84,9 +86,9 @@ async function uploadClipToS3(clipId: string, buffer: Buffer): Promise<Record<st
     return data
 }
 
-function onUserChangeState(channelId: string, user: User, speaking: Readonly<Speaking>) {
+async function onUserChangeState(channelId: string, userId: string, speaking: boolean) {
     // If user is speaking already, return (this event can get fired twice)
-    if (userState.get(user.id) && speaking.has(Speaking.FLAGS.SPEAKING)) {
+    if (userState.get(userId) && speaking) {
         return
     }
 
@@ -98,26 +100,33 @@ function onUserChangeState(channelId: string, user: User, speaking: Readonly<Spe
     const connection = channelData.connection
     const buffer = channelData.buffer
 
-    // If a user starts speaking, 
-    if (speaking.has(Speaking.FLAGS.SPEAKING)) {
-        userState.set(user.id, true)
-        const audio = connection.receiver.createStream(user, {mode: "pcm"})
+    // If a user starts speaking, get an audio stream
+    if (speaking) {
+        userState.set(userId, true)
+        if (connection.receiver.subscriptions.has(userId)) {
+            return
+        }
+        const audio = connection.receiver.subscribe(userId) as unknown as Readable
         const writer = createPCMBufferWriter(buffer)
-        audio.on("data", (chunk: Buffer) => {
-            addToBuffer(writer, chunk)
-        }).on("error", (error: Error) => {
-            console.log("Error when writing data for user id: " + user.id)
+        audio.on("readable", () => {
+            let data: Buffer
+            while ((data = audio.read()) != null) {
+                const decodedData = opusEncoder.decode(data)
+                addToBuffer(writer, decodedData)
+            }
         })
+
     }
 
     // If a user stops speaking, reset the flag
-    else if (userState.get(user.id) && !speaking.has(Speaking.FLAGS.SPEAKING)) {
-        userState.set(user.id, false)
+    else if (userState.get(userId) && !speaking) {
+        userState.set(userId, false)
+        connection.receiver.subscriptions.delete(userId)
     }
 }
 
 // Join a voice channel and register listeners on user voice connections.
-async function joinChannel(channel: VoiceChannel) {
+async function joinChannel(channel: VoiceBasedChannel) {
     if (voiceChannels.has(channel.id)) {
         return
     }
@@ -125,15 +134,28 @@ async function joinChannel(channel: VoiceChannel) {
     // Delay joining by a few hundred millis to not overlap the "join channel noise"
     await new Promise(resolve => setTimeout(resolve, 250))
 
-    const connection: VoiceConnection = await channel.join()
+    const connection: VoiceConnection = joinVoiceChannel({
+        channelId: channel.id,
+        guildId: channel.guild.id,
+        adapterCreator: channel.guild.voiceAdapterCreator,
+        selfDeaf: false,
+        selfMute: false,
+    })
     const buffer: PCMBuffer = createPCMBuffer(BUFFER_LEN_SEC)
-
-    // Play joining audio so Discord starts sending us data
-    connection.play("./yo.wav")
     
+    connection.on(VoiceConnectionStatus.Ready, () => {
+        // Play joining audio so Discord starts sending us data
+        const yoResource = createAudioResource("./yo.wav")
+        player.play(yoResource)
+        connection.subscribe(player)
+    })
+
     // Register listener
-    connection.on("speaking", (user, speaking) => {
-        onUserChangeState(channel.id, user, speaking)
+    connection.receiver.speaking.on("start", (userId: string) => {
+        onUserChangeState(channel.id, userId, true)
+    })
+    connection.receiver.speaking.on("end", (userId: string) => {
+        onUserChangeState(channel.id, userId, false)
     })
 
     let lastCleared: number = timeToOffset(buffer, CLEAR_INTERVAL_SEC)
@@ -148,25 +170,24 @@ async function joinChannel(channel: VoiceChannel) {
         connection: connection,
         buffer: buffer,
         interval: interval,
-        lastClipTime: new Date(0)
+        lastClipTime: new Date(0),
     })
 }
 
 // Leave a voice channel and clean up connections / intervals
-async function leaveChannel(channel: VoiceChannel) {
+async function leaveChannel(channel: VoiceBasedChannel) {
     // always fetch the channel via API as using data from the cache
     // may lead to the bot being stuck in an empty channel
-    const fetchedChannel: VoiceChannel = await channel.fetch(true) as VoiceChannel
+    const fetchedChannel: VoiceBasedChannel = await channel.fetch(true) as VoiceBasedChannel
     const voiceChannelData = voiceChannels.get(channel.id)
     if (voiceChannelData && fetchedChannel.members.size == 1) {
-        const connection: VoiceConnection = voiceChannelData.connection
         voiceChannelData.connection.disconnect()
         clearInterval(voiceChannelData.interval)
         voiceChannels.delete(channel.id)
     }
 }
 
-async function handleSaveClip(channel: VoiceChannel, clipNameArg: string | undefined, clipDurationArg: string | undefined, textChannel: TextChannel) {
+async function handleSaveClip(channel: VoiceBasedChannel, clipNameArg: string | undefined, clipDurationArg: string | undefined, textChannel: TextChannel) {
     const voiceChannelData = voiceChannels.get(channel.id)
     if (!voiceChannelData) {
         return
@@ -234,7 +255,7 @@ async function handleSaveClip(channel: VoiceChannel, clipNameArg: string | undef
     }
 }
 
-async function handlePlayClip(channel: VoiceChannel, clipName: string, textChannel: TextChannel) {
+async function handlePlayClip(channel: VoiceBasedChannel, clipName: string, textChannel: TextChannel) {
     const voiceChannelData = voiceChannels.get(channel.id)
     if (!voiceChannelData) {
         return
@@ -266,7 +287,8 @@ async function handlePlayClip(channel: VoiceChannel, clipName: string, textChann
             }
         })
 
-        voiceChannelData.connection.play(readable, {type: "converted"})
+        const resource = createAudioResource(readable, {inputType: StreamType.Raw})
+        player.play(resource)
     } catch (err) {
         console.log(err)
     }
@@ -430,7 +452,7 @@ async function handleMessage(message: Message) {
 export const RecorderModule: BotModule = (client: Client) => {
     console.log("Loaded RecorderModule")
 
-    client.on("message", async (message: Message) => {
+    client.on("messageCreate", async (message: Message) => {
         try {
             handleMessage(message)
         } catch (error) {
@@ -444,8 +466,8 @@ export const RecorderModule: BotModule = (client: Client) => {
             return
         }
 
-        const newUserChannel: VoiceChannel | null = newMember.channel
-        const oldUserChannel: VoiceChannel | null = oldMember.channel
+        const newUserChannel: VoiceBasedChannel | null = newMember.channel
+        const oldUserChannel: VoiceBasedChannel | null = oldMember.channel
 
         // User joined voice channel
         if (newUserChannel && newUserChannel.id === process.env.VOICE_CHANNEL) {

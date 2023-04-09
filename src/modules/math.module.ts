@@ -1,5 +1,5 @@
 import { BotModule } from "../types"
-import { Client, Message } from "discord.js"
+import { Client, Message, StageChannel, TextChannel } from "discord.js"
 import { mathjax } from "mathjax-full/js/mathjax"
 import { liteAdaptor } from "mathjax-full/js/adaptors/liteAdaptor"
 import { RegisterHTMLHandler } from "mathjax-full/js/handlers/html"
@@ -74,6 +74,9 @@ function getUniqueMessageIdentifier(message: Message): string {
 }
 
 async function handleMathJax(message: Message) {
+    if (!(message.channel instanceof TextChannel)) {
+        return
+    }
     const id = getUniqueMessageIdentifier(message)
     try {
         const document = extractMathJaxFromMessageContent(message.content)
@@ -83,7 +86,10 @@ async function handleMathJax(message: Message) {
         .catch(err => {
             console.error(err)
         })
-        return message.channel.send(`<@${message.author.id}>`, {
+        return message.channel.send({
+            body: {
+                content: `<@${message.author.id}>`,
+            },
             files: [{
                 attachment: pngBuffer
             }]
@@ -96,7 +102,7 @@ async function handleMathJax(message: Message) {
 
 export const MathModule: BotModule = (client: Client) => {
     console.log("Loaded MathModule")
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         if (message.channel && EQ_COMMAND_REGEX.test(message.content)) {
             await handleMathJax(message)
         }

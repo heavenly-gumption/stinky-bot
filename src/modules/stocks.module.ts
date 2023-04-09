@@ -306,7 +306,7 @@ async function handleMessage(message: Message) {
 }
 
 export const StocksModule: BotModule = (client: Client) => {
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         handleMessage(message)
     })
     console.log("Loaded StocksModule")

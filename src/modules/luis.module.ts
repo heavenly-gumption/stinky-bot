@@ -64,7 +64,7 @@ function getResponse(messageContent: string){
 
 export const LuisModule: BotModule = (client: Client) => {
     initializeMarkov()
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         if (message.content && message.content.startsWith("!luis")) {
             message.reply(getResponse(message.content))
         }

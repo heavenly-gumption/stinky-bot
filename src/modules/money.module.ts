@@ -1,6 +1,6 @@
 import { BotModule } from "../types"
 import { getMoneyBalanceDao } from "../utils/model"
-import { User, Message, Client, TextChannel } from "discord.js"
+import { User, Message, Client, TextChannel, StageChannel } from "discord.js"
 import { BALANCE_UNINITIALIZED_ERROR, LOW_BALANCE_ERROR } from "../types/models/moneybalance.dao"
 import pgPromise from "pg-promise"
 
@@ -9,7 +9,7 @@ const MENTION_PATTERN = /<@!?(\d+)>/
 const moneyBalanceDao = getMoneyBalanceDao()
 
 async function printBalance(message: Message) {
-    if (!message.author || !message.channel) {
+    if (!message.author || !message.channel || !(message.channel instanceof TextChannel)) {
         return
     }
 
@@ -17,9 +17,7 @@ async function printBalance(message: Message) {
 
     try {
         const balance = await moneyBalanceDao.getBalance(author.id)
-        if (message.channel) {
             await message.channel.send(author.username + " has **" + balance.amount + "** :gem: ")
-        }
     } catch (error) {
         await moneyBalanceDao.initUser(author.id)
         await printBalance(message)
@@ -79,7 +77,7 @@ async function handleMessage(message: Message) {
 
 export const MoneyModule: BotModule = (client: Client) => {
     console.log("Loaded MoneyModule")
-    client.on("message", async message => {
+    client.on("messageCreate", async message => {
         await handleMessage(message)
     })
 }

@@ -5,7 +5,7 @@ declare let process: {
 }
 dotenv.config()
 
-import { Client } from "discord.js"
+import { Client, GatewayIntentBits } from "discord.js"
 
 import { Environment } from "./types"
 import { loadEnabledModules, applyAllModules } from "./modules"
@@ -15,7 +15,14 @@ import { loadEnabledModules, applyAllModules } from "./modules"
 async function main() {
     Error.stackTraceLimit = Infinity
     
-    const client = new Client()
+    const client = new Client({intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions, 
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.MessageContent,
+    ]})
+
     client.on("ready", async () => {
         const enabledModules = loadEnabledModules()
         console.log("Applying modules")
@@ -23,6 +30,7 @@ async function main() {
         console.log("Applied all modules")
         console.log("Logged in!")
     })
+
     await client.login(process.env.DISCORD_TOKEN)
 }
 
