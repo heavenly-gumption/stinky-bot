@@ -1,4 +1,5 @@
 import firebaseAdmin from "firebase-admin"
+import { initializeFirestore } from "firebase-admin/firestore"
 
 function getCredentials(): firebaseAdmin.ServiceAccount {
     const privateKey: string | undefined = process.env.FIREBASE_PRIVATE_KEY
@@ -25,7 +26,7 @@ export function getFirestoreConnection(): FirebaseFirestore.Firestore {
         databaseURL: process.env.FIRESTORE_URL
     })
 
-    db = firebaseAdminApp.firestore()
+    db = initializeFirestore(firebaseAdminApp, {preferRest: true})
 
     console.log("Established Firestore connection")
     return db
